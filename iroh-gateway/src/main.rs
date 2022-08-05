@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
 
      let app = Router::new().route("/health", get(|| async { "Hello, world!" }));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 9050));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 9050));
     // let addr = format!("0.0.0.0:{}", 9050);
     println!("listening on {}", addr);
     axum::Server::bind(&addr)
