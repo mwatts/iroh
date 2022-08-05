@@ -284,7 +284,100 @@ async fn perf_check(
     Query(query_params): Query<GetParams>,
     request_headers: HeaderMap,
 ) -> Result<GatewayResponse, GatewayError> {
-    return Err(error(StatusCode::BAD_REQUEST, "wat", &state));
+    state.metrics.requests_total.inc();
+    let start_time = time::Instant::now();
+    // parse path params
+    let scheme = params.get("scheme").unwrap();
+    if scheme != SCHEME_IPFS && scheme != SCHEME_IPNS {
+        return Err(error(
+            StatusCode::BAD_REQUEST,
+            "invalid scheme, must be ipfs or ipns",
+            &state,
+        ));
+    }
+    let cid = params.get("cid").unwrap();
+    let cpath = "".to_string();
+    let cpath = params.get("cpath").unwrap_or(&cpath);
+    let query_params_copy = query_params.clone();
+
+    let uri_param = query_params.uri.clone().unwrap_or_default();
+    if !uri_param.is_empty() {
+        return protocol_handler_redirect(uri_param, &state);
+    }
+    service_worker_check(&request_headers, cpath.to_string(), &state)?;
+    unsuported_header_check(&request_headers, &state)?;
+
+    // check if cid is in the denylist
+    if state.bad_bits.read().await.is_bad(cid, cpath) {
+        return Err(error(
+            StatusCode::FORBIDDEN,
+            "CID is in the denylist",
+            &state,
+        ));
+    } else {
+        // println!("\n not bad: {}{}", cid, cpath);
+    }
+
+    let full_content_path = format!("/{}/{}{}", scheme, cid, cpath);
+    let resolved_path: iroh_resolver::resolver::Path = full_content_path
+        .parse()
+        .map_err(|e: anyhow::Error| e.to_string())
+        .map_err(|e| error(StatusCode::BAD_REQUEST, &e, &state))?;
+    let resolved_cid = resolved_path.root();
+
+    // check if cid is in the denylist
+    if state
+        .bad_bits
+        .read()
+        .await
+        .is_bad(resolved_cid.to_string().as_str(), "")
+    {
+        return Err(error(
+            StatusCode::FORBIDDEN,
+            "CID is in the denylist",
+            &state,
+        ));
+    }
+
+    // parse query params
+    let format = match get_response_format(&request_headers, query_params.format) {
+        Ok(format) => format,
+        Err(err) => {
+            return Err(error(StatusCode::BAD_REQUEST, &err, &state));
+        }
+    };
+
+    let query_file_name = query_params.filename.unwrap_or_default();
+    let download = query_params.download.unwrap_or_default();
+    let recursive = query_params.recursive.unwrap_or_default();
+
+    let mut headers = HeaderMap::new();
+
+    if let Some(resp) = etag_check(&request_headers, resolved_cid, &format, &state) {
+        return Ok(resp);
+    }
+
+    // init headers
+    format.write_headers(&mut headers);
+    add_user_headers(&mut headers, state.config.headers.clone());
+    headers.insert(
+        &HEADER_X_IPFS_PATH,
+        HeaderValue::from_str(&full_content_path).unwrap(),
+    );
+
+    // handle request and fetch data
+    let req = Request {
+        format,
+        cid: resolved_path.root().clone(),
+        resolved_path,
+        query_file_name,
+        content_path: full_content_path.to_string(),
+        download,
+        query_params: query_params_copy,
+    };
+
+
+    return Err(error(StatusCode::BAD_REQUEST, &req.cid.to_string(), &state));
 }
 
 #[tracing::instrument()]
