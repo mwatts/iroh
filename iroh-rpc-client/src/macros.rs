@@ -26,6 +26,7 @@ macro_rules! impl_client {
                                 .tcp_nodelay(true)
                                 .initial_connection_window_size(1024 * 1024 * 64*4*2)
                                 .initial_stream_window_size(1024 * 1024 * 2)
+                                .http2_adaptive_window(true)
                                 .connect_lazy();
 
                             let client = [<Grpc $label Client>]::new(conn.clone());
