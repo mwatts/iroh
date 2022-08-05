@@ -347,15 +347,16 @@ async fn perf_check(
         }
     };
 
+
     let query_file_name = query_params.filename.unwrap_or_default();
     let download = query_params.download.unwrap_or_default();
     let recursive = query_params.recursive.unwrap_or_default();
 
     let mut headers = HeaderMap::new();
 
-    if let Some(resp) = etag_check(&request_headers, resolved_cid, &format, &state) {
-        return Ok(resp);
-    }
+    // if let Some(resp) = etag_check(&request_headers, resolved_cid, &format, &state) {
+    //     return Ok(resp);
+    // }
 
     // init headers
     format.write_headers(&mut headers);
@@ -376,8 +377,15 @@ async fn perf_check(
         query_params: query_params_copy,
     };
 
-
-    return Err(error(StatusCode::BAD_REQUEST, &req.cid.to_string(), &state));
+    if recursive {
+        serve_car_recursive(&req, state, headers, start_time).await
+    } else {
+        match req.format {
+            ResponseFormat::Raw => serve_raw(&req, state, headers, start_time).await,
+            ResponseFormat::Car => serve_car(&req, state, headers, start_time).await,
+            ResponseFormat::Fs(_) => serve_fs(&req, state, headers, start_time).await,
+        }
+    }
 }
 
 #[tracing::instrument()]

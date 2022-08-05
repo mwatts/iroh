@@ -115,13 +115,13 @@ async fn main() -> Result<()> {
     //         .await
     //         .expect("failed to initialize metrics");
     let server = handler.server();
-    // println!("listening on {}", server.local_addr());
-    // let core_task = tokio::spawn(async move {
+    println!("listening on {}", server.local_addr());
+    let core_task = tokio::spawn(async move {
         server.await.unwrap();
-    // });
+    });
 
-    // iroh_util::block_until_sigint().await;
-    // core_task.abort();
+    iroh_util::block_until_sigint().await;
+    core_task.abort();
 
     // metrics_handle.shutdown();
     // if let Some(handle) = bad_bits_handle {
