@@ -38,11 +38,11 @@ async fn main() -> Result<()> {
     };
 
     let pb = ProgressBar::new(total_size);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
-            .progress_chars("#>-")
-    );
+    // pb.set_style(
+    //     ProgressStyle::default_bar()
+    //         .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
+    //         .progress_chars("#>-")
+    // );
 
     let start = Instant::now();
     let pb_clone = pb.clone();
