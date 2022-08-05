@@ -142,16 +142,13 @@ impl Client {
         let (mut sender, body) = Body::channel();
 
         tokio::spawn(async move {
-            let test_path = Path::new("test_big.txt");
-            let mut file = File::open(test_path).unwrap();
-            let mut buf = [0u8; CHUNK_SIZE];
-
-            while let Ok(n) = file.read(&mut buf) {
+            // let test_path = Path::new("test_big.txt");
+            // let mut file = File::open(test_path).unwrap();
+            // let mut buf = [0u8; CHUNK_SIZE];
                 sender
-                    .send_data(axum::body::Bytes::from(buf[..n].to_vec()))
+                    .send_data(axum::body::Bytes::from("hepek"))
                     .await
                     .unwrap();
-            }
         });
 
         Ok(body)
