@@ -383,7 +383,7 @@ async fn perf_check(
         match req.format {
             ResponseFormat::Raw => serve_raw(&req, state, headers, start_time).await,
             ResponseFormat::Car => serve_car(&req, state, headers, start_time).await,
-            ResponseFormat::Fs(_) => serve_fs_test(&req, state, headers, start_time).await,
+            ResponseFormat::Fs(_) => serve_fs(&req, state, headers, start_time).await,
         }
     }
 }
