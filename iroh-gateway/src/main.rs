@@ -103,27 +103,27 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let bad_bits_handle = match use_denylist {
-        true => Some(bad_bits::bad_bits_update_handler(bad_bits)),
-        false => None,
-    };
-    let metrics_handle =
-        iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
-            .await
-            .expect("failed to initialize metrics");
+    // let bad_bits_handle = match use_denylist {
+    //     true => Some(bad_bits::bad_bits_update_handler(bad_bits)),
+    //     false => None,
+    // };
+    // let metrics_handle =
+    //     iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
+    //         .await
+    //         .expect("failed to initialize metrics");
     let server = handler.server();
-    println!("listening on {}", server.local_addr());
-    let core_task = tokio::spawn(async move {
+    // println!("listening on {}", server.local_addr());
+    // let core_task = tokio::spawn(async move {
         server.await.unwrap();
-    });
+    // });
 
     iroh_util::block_until_sigint().await;
-    core_task.abort();
+    // core_task.abort();
 
-    metrics_handle.shutdown();
-    if let Some(handle) = bad_bits_handle {
-        handle.abort();
-    }
+    // metrics_handle.shutdown();
+    // if let Some(handle) = bad_bits_handle {
+    //     handle.abort();
+    // }
 
     // match guard.report().build() {
     //     Ok(report) => {
