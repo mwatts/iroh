@@ -23,6 +23,8 @@ macro_rules! impl_client {
                         Addr::GrpcHttp2(addr) => {
                             let conn = Endpoint::new(format!("http://{}", addr))?
                                 .keep_alive_while_idle(true)
+                                .tcp_nodelay(true)
+                                .concurrency_limit(65536)
                                 .connect_lazy();
 
                             let client = [<Grpc $label Client>]::new(conn.clone());

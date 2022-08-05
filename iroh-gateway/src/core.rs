@@ -198,7 +198,7 @@ async fn get_handler(
             &state,
         ));
     } else {
-        println!("\n not bad: {}{}", cid, cpath);
+        // println!("\n not bad: {}{}", cid, cpath);
     }
 
     let full_content_path = format!("/{}/{}{}", scheme, cid, cpath);

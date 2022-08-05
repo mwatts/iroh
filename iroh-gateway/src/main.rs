@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::{collections::HashMap, fs::File};
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -12,6 +13,7 @@ use iroh_gateway::{
 };
 use iroh_metrics::gateway::Metrics;
 use iroh_util::{iroh_home_path, make_config};
+use pprof::protos::Message;
 use prometheus_client::registry::Registry;
 use tokio::sync::RwLock;
 
@@ -62,6 +64,11 @@ impl Args {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
+    // let guard = pprof::ProfilerGuardBuilder::default().frequency(100).blocklist(&["libc", "libgcc", "pthread", "vdso"]).build().unwrap();
+    // let guard = pprof::ProfilerGuardBuilder::default()
+    //     .frequency(1000)
+    //     .build()
+    //     .unwrap();
     let args = Args::parse();
 
     let sources = vec![iroh_home_path(CONFIG_FILE_NAME), args.cfg.clone()];
@@ -97,8 +104,8 @@ async fn main() -> Result<()> {
     .await?;
 
     let bad_bits_handle = match use_denylist {
-        true => bad_bits::bad_bits_update_handler(bad_bits),
-        false => tokio::spawn(async move {}),
+        true => Some(bad_bits::bad_bits_update_handler(bad_bits)),
+        false => None,
     };
     let metrics_handle =
         iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
@@ -114,6 +121,24 @@ async fn main() -> Result<()> {
     core_task.abort();
 
     metrics_handle.shutdown();
-    bad_bits_handle.abort();
+    if let Some(handle) = bad_bits_handle {
+        handle.abort();
+    }
+
+    // match guard.report().build() {
+    //     Ok(report) => {
+    //         let mut file = File::create("profile.pb").unwrap();
+    //         let profile = report.pprof().unwrap();
+
+    //         let mut content = Vec::new();
+    //         profile.encode(&mut content).unwrap();
+    //         file.write_all(&content).unwrap();
+
+    //         // println!("report: {:?}", &report);
+    //     }
+    //     Err(_) => {
+    //         println!("failed to generate profile");
+    //     }
+    // };
     Ok(())
 }

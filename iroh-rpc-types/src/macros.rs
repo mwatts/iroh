@@ -12,6 +12,7 @@ macro_rules! proxy {
                             .await;
 
                         tonic::transport::Server::builder()
+                            .concurrency_limit_per_connection(4096)
                             .add_service(health_service)
                             .add_service([<$label:lower _server>]::[<$label Server>]::new(source))
                             .serve(addr)

@@ -43,6 +43,7 @@ impl Client {
         info!("get file {}", path);
         let res = self
             .resolver
+            .clone()
             .resolve(path)
             .await
             .map_err(|e| e.to_string())?;
