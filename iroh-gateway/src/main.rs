@@ -72,39 +72,39 @@ async fn main() -> Result<()> {
     //     .frequency(1000)
     //     .build()
     //     .unwrap();
-    // let args = Args::parse();
+    let args = Args::parse();
 
-    // let sources = vec![iroh_home_path(CONFIG_FILE_NAME), args.cfg.clone()];
-    // let mut config = make_config(
-    //     // default
-    //     Config::default(),
-    //     // potential config files
-    //     sources,
-    //     // env var prefix for this config
-    //     ENV_PREFIX,
-    //     // map of present command line arguments
-    //     args.make_overrides_map(),
-    // )
-    // .unwrap();
-    // config.metrics = metrics::metrics_config_with_compile_time_info(config.metrics);
-    // let use_denylist = config.denylist;
-    // println!("{:#?}", config);
+    let sources = vec![iroh_home_path(CONFIG_FILE_NAME), args.cfg.clone()];
+    let mut config = make_config(
+        // default
+        Config::default(),
+        // potential config files
+        sources,
+        // env var prefix for this config
+        ENV_PREFIX,
+        // map of present command line arguments
+        args.make_overrides_map(),
+    )
+    .unwrap();
+    config.metrics = metrics::metrics_config_with_compile_time_info(config.metrics);
+    let use_denylist = config.denylist;
+    println!("{:#?}", config);
 
-    // let metrics_config = config.metrics.clone();
-    // let mut prom_registry = Registry::default();
-    // let gw_metrics = Metrics::new(&mut prom_registry);
-    // let bad_bits = Arc::new(RwLock::new(BadBits::new()));
-    // let rpc_addr = config
-    //     .server_rpc_addr()?
-    //     .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
-    // let handler = Core::new(
-    //     config,
-    //     rpc_addr,
-    //     gw_metrics,
-    //     &mut prom_registry,
-    //     Arc::clone(&bad_bits),
-    // )
-    // .await?;
+    let metrics_config = config.metrics.clone();
+    let mut prom_registry = Registry::default();
+    let gw_metrics = Metrics::new(&mut prom_registry);
+    let bad_bits = Arc::new(RwLock::new(BadBits::new()));
+    let rpc_addr = config
+        .server_rpc_addr()?
+        .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
+    let handler = Core::new(
+        config,
+        rpc_addr,
+        gw_metrics,
+        &mut prom_registry,
+        Arc::clone(&bad_bits),
+    )
+    .await?;
 
     // let bad_bits_handle = match use_denylist {
     //     true => Some(bad_bits::bad_bits_update_handler(bad_bits)),
@@ -114,21 +114,11 @@ async fn main() -> Result<()> {
     //     iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
     //         .await
     //         .expect("failed to initialize metrics");
-    // let server = handler.server();
+    let server = handler.server();
     // println!("listening on {}", server.local_addr());
     // let core_task = tokio::spawn(async move {
-        // server.await.unwrap();
+        server.await.unwrap();
     // });
-
-     let app = Router::new().route("/health", get(|| async { "Hello, world!" }));
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], 9050));
-    // let addr = format!("0.0.0.0:{}", 9050);
-    println!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
 
     // iroh_util::block_until_sigint().await;
     // core_task.abort();
