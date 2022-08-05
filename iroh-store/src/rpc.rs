@@ -38,16 +38,16 @@ impl RpcStore for Store {
     #[tracing::instrument(skip(self))]
     async fn get(&self, req: GetRequest) -> Result<GetResponse> {
         let cid = cid_from_bytes(req.cid)?;
-        // if let Some(res) = self.get(&cid).await? {
-        //     Ok(GetResponse {
-        //         data: Some(BytesMut::from(&res[..]).freeze()),
-        //     })
-        // } else {
-        //     Ok(GetResponse { data: None })
-        // }
-        Ok(GetResponse {
-                data: Some(BytesMut::from("FAKE DB DATA").freeze()),
+        if let Some(res) = self.get(&cid).await? {
+            Ok(GetResponse {
+                data: Some(BytesMut::from(&res[..]).freeze()),
             })
+        } else {
+            Ok(GetResponse { data: None })
+        }
+        // Ok(GetResponse {X
+        //         data: Some(BytesMut::from("FAKE DB DATA").freeze()),
+        //     })
     }
 
     #[tracing::instrument(skip(self))]
