@@ -130,8 +130,8 @@ impl Core {
             .route("/:scheme/:cid/*cpath", get(get_handler))
             .route("/health", get(health_check))
             .route("/perf/:scheme/:cid", get(perf_check))
-            .route("/perf/:scheme/:cid/*cpath", get(perf_check))
-            .layer(Extension(Arc::clone(&self.state)));
+            .route("/perf/:scheme/:cid/*cpath", get(perf_check));
+            // .layer(Extension(Arc::clone(&self.state)));
             // .layer(
             //     ServiceBuilder::new()
             //         // Handle errors from middleware
@@ -156,8 +156,8 @@ impl Core {
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
         axum::Server::bind(&addr.parse().unwrap())
-            .http1_preserve_header_case(true)
-            .http1_title_case_headers(true)
+            // .http1_preserve_header_case(true)
+            // .http1_title_case_headers(true)
             .serve(app.into_make_service())
     }
 }
