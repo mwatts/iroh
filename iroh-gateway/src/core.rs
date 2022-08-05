@@ -131,7 +131,7 @@ impl Core {
             .route("/health", get(health_check))
             .route("/perf/:scheme/:cid", get(perf_check))
             .route("/perf/:scheme/:cid/*cpath", get(perf_check))
-            .layer(Extension(Arc::clone(&self.state)))
+            .layer(Extension(Arc::clone(&self.state)));
             // .layer(
             //     ServiceBuilder::new()
             //         // Handle errors from middleware
@@ -142,16 +142,16 @@ impl Core {
             //         .timeout(Duration::from_secs(60))
             //         .into_inner(),
             // )
-            .layer(
-                // Tracing span for each request
-                TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
-                    info_span!(
-                        "request",
-                        method = %request.method(),
-                        uri = %request.uri(),
-                    )
-                }),
-            );
+            // .layer(
+            //     // Tracing span for each request
+            //     TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
+            //         info_span!(
+            //             "request",
+            //             method = %request.method(),
+            //             uri = %request.uri(),
+            //         )
+            //     }),
+            // );
         // todo(arqu): make configurable
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
