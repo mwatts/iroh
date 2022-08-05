@@ -24,7 +24,7 @@ macro_rules! impl_client {
                             let conn = Endpoint::new(format!("http://{}", addr))?
                                 .keep_alive_while_idle(true)
                                 .tcp_nodelay(true)
-                                .initial_connection_window_size(1024 * 1024 * 64)
+                                .initial_connection_window_size(1024 * 1024 * 64*4)
                                 .initial_stream_window_size(1024 * 1024 * 2)
                                 .concurrency_limit(65536)
                                 .connect_lazy();
