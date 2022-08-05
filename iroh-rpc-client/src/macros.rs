@@ -26,7 +26,6 @@ macro_rules! impl_client {
                                 .tcp_nodelay(true)
                                 .initial_connection_window_size(1024 * 1024 * 64*4)
                                 .initial_stream_window_size(1024 * 1024 * 2)
-                                .concurrency_limit(65536)
                                 .connect_lazy();
 
                             let client = [<Grpc $label Client>]::new(conn.clone());
@@ -45,6 +44,9 @@ macro_rules! impl_client {
                             // dummy addr
                             let conn = Endpoint::new("http://[..]:50051")?
                                 .keep_alive_while_idle(true)
+                                .tcp_nodelay(true)
+                                .initial_connection_window_size(1024 * 1024 * 64*4)
+                                .initial_stream_window_size(1024 * 1024 * 2)
                                 .connect_with_connector_lazy(tower::service_fn(move |_: Uri| {
                                     let path = path.clone();
                                     UnixStream::connect(path.as_ref().clone())
