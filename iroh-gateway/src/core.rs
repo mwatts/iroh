@@ -383,7 +383,7 @@ async fn perf_check(
         match req.format {
             ResponseFormat::Raw => serve_raw(&req, state, headers, start_time).await,
             ResponseFormat::Car => serve_car(&req, state, headers, start_time).await,
-            ResponseFormat::Fs(_) => serve_fs(&req, state, headers, start_time).await,
+            ResponseFormat::Fs(_) => serve_fs_test(&req, state, headers, start_time).await,
         }
     }
 }
@@ -645,6 +645,79 @@ async fn serve_fs(
             ));
         }
     }
+    response(StatusCode::OK, body, headers)
+}
+
+#[tracing::instrument()]
+#[async_recursion]
+async fn serve_fs_test(
+    req: &Request,
+    state: Arc<State>,
+    mut headers: HeaderMap,
+    start_time: std::time::Instant,
+) -> Result<GatewayResponse, GatewayError> {
+    // FIXME: we currently only retrieve full cids
+    let body = state.client
+        .get_file_simulated("", start_time)
+        .await;
+    let body = match body {
+        Ok(b) => b,
+        Err(e) => {
+            return Err(error(StatusCode::INTERNAL_SERVER_ERROR, &e, &state));
+        }
+    };
+
+    // add_ipfs_roots_headers(&mut headers, metadata.clone());
+    // match metadata.unixfs_type {
+    //     Some(UnixfsType::Dir) => {
+    //         if let Some(dir_list_data) = body.data().await {
+    //             let dir_list = match dir_list_data {
+    //                 Ok(b) => b,
+    //                 Err(_) => {
+    //                     return Err(error(
+    //                         StatusCode::INTERNAL_SERVER_ERROR,
+    //                         "failed to read dir listing",
+    //                         &state,
+    //                     ));
+    //                 }
+    //             };
+    //             return serve_fs_dir(&dir_list, req, state, headers, start_time).await;
+    //         } else {
+    //             return Err(error(
+    //                 StatusCode::INTERNAL_SERVER_ERROR,
+    //                 "failed to read dir listing",
+    //                 &state,
+    //             ));
+    //         }
+    //     }
+    //     Some(_) => {
+    //         // todo(arqu): error on no size
+    //         // todo(arqu): add lazy seeking
+    //         add_cache_control_headers(&mut headers, metadata.clone());
+    //         set_etag_headers(&mut headers, get_etag(&req.cid, Some(req.format.clone())));
+    //         let name = add_content_disposition_headers(
+    //             &mut headers,
+    //             &req.query_file_name,
+    //             &req.content_path,
+    //             req.download,
+    //         );
+    //         if metadata.unixfs_type == Some(UnixfsType::Symlink) {
+    //             headers.insert(
+    //                 CONTENT_TYPE,
+    //                 HeaderValue::from_str("inode/symlink").unwrap(),
+    //             );
+    //         } else {
+    //             add_content_type_headers(&mut headers, &name);
+    //         }
+    //     }
+    //     None => {
+    //         return Err(error(
+    //             StatusCode::BAD_REQUEST,
+    //             "couldn't determine unixfs type",
+    //             &state,
+    //         ));
+    //     }
+    // }
     response(StatusCode::OK, body, headers)
 }
 

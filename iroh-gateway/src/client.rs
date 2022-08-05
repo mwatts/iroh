@@ -1,7 +1,11 @@
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::sync::Arc;
 
 use axum::body::StreamBody;
 use futures::StreamExt;
+use hyper::Body;
 use iroh_metrics::gateway::Metrics;
 use iroh_resolver::resolver::CidOrDomain;
 use iroh_resolver::resolver::Metadata;
@@ -22,6 +26,8 @@ use crate::response::ResponseFormat;
 pub struct Client {
     resolver: Arc<Resolver<iroh_rpc_client::Client>>,
 }
+
+pub const CHUNK_SIZE: usize=1024;
 
 pub type PrettyStreamBody = StreamBody<ReaderStream<OutPrettyReader<iroh_rpc_client::Client>>>;
 
@@ -121,6 +127,30 @@ impl Client {
                         break;
                     }
                 }
+            }
+        });
+
+        Ok(body)
+    }
+
+    #[tracing::instrument()]
+    pub async fn get_file_simulated(
+        &self,
+        _path: &str,
+        start_time: std::time::Instant,
+    ) -> Result<Body, String> {
+        let (mut sender, body) = Body::channel();
+
+        tokio::spawn(async move {
+            let test_path = Path::new("test_big.txt");
+            let mut file = File::open(test_path).unwrap();
+            let mut buf = [0u8; CHUNK_SIZE];
+
+            while let Ok(n) = file.read(&mut buf) {
+                sender
+                    .send_data(axum::body::Bytes::from(buf[..n].to_vec()))
+                    .await
+                    .unwrap();
             }
         });
 
