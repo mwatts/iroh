@@ -24,8 +24,9 @@ macro_rules! impl_client {
                             let conn = Endpoint::new(format!("http://{}", addr))?
                                 .keep_alive_while_idle(true)
                                 .tcp_nodelay(true)
-                                .initial_connection_window_size(1024 * 1024 * 64*4*2)
-                                .initial_stream_window_size(1024 * 1024 * 2)
+
+                                .initial_connection_window_size(1024 * 1024 * 64*4*4)
+                            .initial_stream_window_size(1024 * 1024 * 2 * 64)
                                 .http2_adaptive_window(true)
                                 .connect_lazy();
 
@@ -46,8 +47,8 @@ macro_rules! impl_client {
                             let conn = Endpoint::new("http://[..]:50051")?
                                 .keep_alive_while_idle(true)
                                 .tcp_nodelay(true)
-                                .initial_connection_window_size(1024 * 1024 * 64*4)
-                                .initial_stream_window_size(1024 * 1024 * 2)
+                                .initial_connection_window_size(1024 * 1024 * 64*4*4)
+                            .initial_stream_window_size(1024 * 1024 * 2 * 64)
                                 .connect_with_connector_lazy(tower::service_fn(move |_: Uri| {
                                     let path = path.clone();
                                     UnixStream::connect(path.as_ref().clone())
