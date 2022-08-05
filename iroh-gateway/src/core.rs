@@ -130,28 +130,28 @@ impl Core {
             .route("/:scheme/:cid/*cpath", get(get_handler))
             .route("/health", get(health_check))
             .route("/perf/:scheme/:cid", get(perf_check))
-            .route("/perf/:scheme/:cid/*cpath", get(perf_check));
-            // .layer(Extension(Arc::clone(&self.state)));
-            // .layer(
-            //     ServiceBuilder::new()
-            //         // Handle errors from middleware
-            //         .layer(Extension(Arc::clone(&self.state)))
-            //         .layer(HandleErrorLayer::new(middleware_error_handler))
-            //         .load_shed()
-            //         .concurrency_limit(1024*2048)
-            //         .timeout(Duration::from_secs(60))
-            //         .into_inner(),
-            // )
-            // .layer(
-            //     // Tracing span for each request
-            //     TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
-            //         info_span!(
-            //             "request",
-            //             method = %request.method(),
-            //             uri = %request.uri(),
-            //         )
-            //     }),
-            // );
+            .route("/perf/:scheme/:cid/*cpath", get(perf_check))
+            .layer(Extension(Arc::clone(&self.state)))
+            .layer(
+                ServiceBuilder::new()
+                    // Handle errors from middleware
+                    .layer(Extension(Arc::clone(&self.state)))
+                    .layer(HandleErrorLayer::new(middleware_error_handler))
+                    .load_shed()
+                    .concurrency_limit(1024*2048)
+                    .timeout(Duration::from_secs(60))
+                    .into_inner(),
+            )
+            .layer(
+                // Tracing span for each request
+                TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
+                    info_span!(
+                        "request",
+                        method = %request.method(),
+                        uri = %request.uri(),
+                    )
+                }),
+            );
         // todo(arqu): make configurable
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
