@@ -129,6 +129,8 @@ impl Core {
             .route("/:scheme/:cid", get(get_handler))
             .route("/:scheme/:cid/*cpath", get(get_handler))
             .route("/health", get(health_check))
+            .route("/perf/:scheme/:cid", get(perf_check))
+            .route("/perf/:scheme/:cid/*cpath", get(perf_check))
             .layer(Extension(Arc::clone(&self.state)))
             .layer(
                 ServiceBuilder::new()
@@ -273,6 +275,16 @@ async fn get_handler(
 #[tracing::instrument()]
 async fn health_check() -> String {
     "OK".to_string()
+}
+
+#[tracing::instrument(skip(state))]
+async fn perf_check(
+    Extension(state): Extension<Arc<State>>,
+    Path(params): Path<HashMap<String, String>>,
+    Query(query_params): Query<GetParams>,
+    request_headers: HeaderMap,
+) -> Result<GatewayResponse, GatewayError> {
+    return Err(error(StatusCode::BAD_REQUEST, "wat", &state));
 }
 
 #[tracing::instrument()]
