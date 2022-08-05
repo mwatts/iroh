@@ -141,17 +141,17 @@ impl Core {
                     .concurrency_limit(1024*2048)
                     .timeout(Duration::from_secs(60))
                     .into_inner(),
-            )
-            .layer(
-                // Tracing span for each request
-                TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
-                    info_span!(
-                        "request",
-                        method = %request.method(),
-                        uri = %request.uri(),
-                    )
-                }),
             );
+            // .layer(
+            //     // Tracing span for each request
+            //     TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
+            //         info_span!(
+            //             "request",
+            //             method = %request.method(),
+            //             uri = %request.uri(),
+            //         )
+            //     }),
+            // );
         // todo(arqu): make configurable
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
