@@ -65,7 +65,7 @@ impl Args {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> Result<()> {
     // let guard = pprof::ProfilerGuardBuilder::default().frequency(100).blocklist(&["libc", "libgcc", "pthread", "vdso"]).build().unwrap();
     // let guard = pprof::ProfilerGuardBuilder::default()
