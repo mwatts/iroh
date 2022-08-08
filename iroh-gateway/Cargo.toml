@@ -57,6 +57,8 @@ reqwest = { version = "0.11.10", features = ["rustls-tls", "json"], default-feat
 sha2 = { version = "0.10.2", default-features = false }
 pprof = { version = "0.10", features = ["flamegraph", "prost-codec"] }
 
+actix-web = "4"
+
 [dev-dependencies]
 axum-macros = "0.2.0" # use #[axum_macros::debug_handler] for better error messages on handlers
 

@@ -65,7 +65,8 @@ impl Args {
     }
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
+// #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
+#[actix_web::main]
 async fn main() -> Result<()> {
     // let guard = pprof::ProfilerGuardBuilder::default().frequency(100).blocklist(&["libc", "libgcc", "pthread", "vdso"]).build().unwrap();
     // let guard = pprof::ProfilerGuardBuilder::default()
