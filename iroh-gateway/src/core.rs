@@ -156,6 +156,11 @@ impl Core {
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
         axum::Server::bind(&addr.parse().unwrap())
+            .http2_adaptive_window(true)
+            .http2_keep_alive_interval(Duration::from_secs(30))
+            .tcp_keepalive(Some(Duration::from_secs(30)))
+            .tcp_nodelay(true)
+
             // .http1_preserve_header_case(true)
             // .http1_title_case_headers(true)
             .serve(app.into_make_service())
