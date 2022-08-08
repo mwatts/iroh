@@ -44,6 +44,7 @@ impl StoreClient {
         let req = GetRequest {
             cid: cid.to_bytes(),
         };
+        let res_2 = self.backend.get(req.clone()).await?;
         let res = self.backend.get(req).await?;
         Ok(res.data)
     }
