@@ -27,7 +27,7 @@ pub struct Client {
     resolver: Arc<Resolver<iroh_rpc_client::Client>>,
 }
 
-pub const CHUNK_SIZE: usize=1024;
+pub const CHUNK_SIZE: usize = 1024;
 
 pub type PrettyStreamBody = StreamBody<ReaderStream<OutPrettyReader<iroh_rpc_client::Client>>>;
 
@@ -145,10 +145,10 @@ impl Client {
             // let test_path = Path::new("test_big.txt");
             // let mut file = File::open(test_path).unwrap();
             // let mut buf = [0u8; CHUNK_SIZE];
-                sender
-                    .send_data(axum::body::Bytes::from("hepek"))
-                    .await
-                    .unwrap();
+            sender
+                .send_data(axum::body::Bytes::from("hepek"))
+                .await
+                .unwrap();
         });
 
         Ok(body)

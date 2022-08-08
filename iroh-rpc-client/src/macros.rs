@@ -24,7 +24,7 @@ macro_rules! impl_client {
                             let conn = Endpoint::new(format!("http://{}", addr))?
                                 .keep_alive_while_idle(true)
                                 .tcp_nodelay(true)
-
+                                .tcp_keepalive(Some(tokio::time::Duration::from_secs(30)))
                                 .initial_connection_window_size(1024 * 1024 * 64*4*4)
                             .initial_stream_window_size(1024 * 1024 * 2 * 64)
                                 .http2_adaptive_window(true)

@@ -138,20 +138,20 @@ impl Core {
                     .layer(Extension(Arc::clone(&self.state)))
                     .layer(HandleErrorLayer::new(middleware_error_handler))
                     .load_shed()
-                    .concurrency_limit(1024*2048)
+                    .concurrency_limit(1024 * 2048)
                     .timeout(Duration::from_secs(60))
                     .into_inner(),
             );
-            // .layer(
-            //     // Tracing span for each request
-            //     TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
-            //         info_span!(
-            //             "request",
-            //             method = %request.method(),
-            //             uri = %request.uri(),
-            //         )
-            //     }),
-            // );
+        // .layer(
+        //     // Tracing span for each request
+        //     TraceLayer::new_for_http().make_span_with(|request: &http::Request<Body>| {
+        //         info_span!(
+        //             "request",
+        //             method = %request.method(),
+        //             uri = %request.uri(),
+        //         )
+        //     }),
+        // );
         // todo(arqu): make configurable
         let addr = format!("0.0.0.0:{}", self.state.config.port);
 
@@ -346,7 +346,6 @@ async fn perf_check(
             return Err(error(StatusCode::BAD_REQUEST, &err, &state));
         }
     };
-
 
     let query_file_name = query_params.filename.unwrap_or_default();
     let download = query_params.download.unwrap_or_default();
@@ -657,9 +656,7 @@ async fn serve_fs_test(
     start_time: std::time::Instant,
 ) -> Result<GatewayResponse, GatewayError> {
     // FIXME: we currently only retrieve full cids
-    let body = state.client
-        .get_file_simulated("", start_time)
-        .await;
+    let body = state.client.get_file_simulated("", start_time).await;
     let body = match body {
         Ok(b) => b,
         Err(e) => {

@@ -44,14 +44,8 @@ impl StoreClient {
         let req = GetRequest {
             cid: cid.to_bytes(),
         };
-        // let res_2 = self.backend.get(req.clone()).await?;
-        // let res_3 = self.backend.get(req.clone()).await?;
-        // let res_4 = self.backend.get(req.clone()).await?;
-        // let res_5 = self.backend.get(req.clone()).await?;
-        // let res_6 = self.backend.get(req.clone()).await?;
-        // let res = self.backend.get(req).await?;
-        // Ok(res.data)
-        Ok(Some(Bytes::from("FAKE DB DATA")))
+        let res = self.backend.get(req).await?;
+        Ok(res.data)
     }
 
     #[tracing::instrument(skip(self))]

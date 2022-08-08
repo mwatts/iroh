@@ -13,6 +13,8 @@ macro_rules! proxy {
 
                         tonic::transport::Server::builder()
                             .tcp_nodelay(true)
+                            .tcp_keepalive(Some(tokio::time::Duration::from_secs(30)))
+                            .concurrency_limit_per_connection(4096)
                             .initial_connection_window_size(1024 * 1024 * 64*4*4)
                             .initial_stream_window_size(1024 * 1024 * 2 * 64)
                             .add_service(health_service)
