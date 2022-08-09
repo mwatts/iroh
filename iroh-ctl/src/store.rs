@@ -4,6 +4,8 @@ use anyhow::Result;
 use cid::Cid;
 use clap::{Args, Subcommand};
 use iroh_rpc_client::Client;
+use futures::StreamExt;
+
 
 #[derive(Args, Debug, Clone)]
 pub struct Store {
@@ -61,7 +63,22 @@ pub async fn run_command(rpc: Client, cmd: Store) -> Result<()> {
                 println!("{:?}\n", b);
             }
             BlockCommands::Put { path } => {
-                todo!("`block put` command not yet implemented - path {:?}", path);
+                                let name = path.file_name().unwrap().to_str().unwrap();
+                let data = std::fs::read(&path)?;
+                let mut file = iroh_resolver::unixfs_builder::FileBuilder::new();
+                file.name(name).content_bytes(data);
+                let file = file.build().await?;
+                let mut root_cid: Option<Cid> = None;
+                let parts = file.encode();
+                tokio::pin!(parts);
+                while let Some(part) = parts.next().await {
+                    // TODO: store links in the store
+                    let (cid, bytes) = part?;
+                    root_cid = Some(cid);
+                    rpc.try_store()?.put(cid, bytes, vec![]).await?;
+                }
+                let root = root_cid.unwrap();
+                println!("/ipfs/{}\n", root.to_string());
             }
             BlockCommands::Rm { cid } => {
                 todo!(
