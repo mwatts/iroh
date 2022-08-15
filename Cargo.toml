@@ -19,4 +19,5 @@ members = [
 
 [patch.crates-io]
 libp2p = { git = "https://github.com/dignifiedquire/rust-libp2p", branch = "feat-kad-count" }
+tokio = { git = "https://github.com/Arqu/tokio", branch = "arqu/test" }
 # libp2p = { path = "../rust-libp2p" }
