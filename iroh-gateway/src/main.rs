@@ -52,7 +52,7 @@ impl Args {
     }
 }
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads = 48)]
 async fn main() -> Result<()> {
     let args = Args::parse();
 
