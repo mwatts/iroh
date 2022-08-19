@@ -15,12 +15,12 @@ use crate::{
     templates,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Core {
     state: Arc<State>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct State {
     pub config: Arc<dyn StateConfig>,
     pub client: Client,
@@ -60,6 +60,38 @@ impl Core {
         })
     }
 
+    pub async fn new_with_state(
+        rpc_addr: GatewayServerAddr,
+        state: Arc<State>,
+    ) -> anyhow::Result<Self> {
+        tokio::spawn(async move {
+            // TODO: handle error
+            rpc::new(rpc_addr, Gateway::default()).await
+        });
+        Ok(Self { state })
+    }
+
+    pub async fn make_state(
+        config: Arc<dyn StateConfig>,
+        metrics: Metrics,
+        registry: &mut Registry,
+        bad_bits: Arc<Option<RwLock<BadBits>>>,
+    ) -> anyhow::Result<Arc<State>> {
+        let rpc_client = RpcClient::new(config.rpc_client()).await?;
+        let mut templates = HashMap::new();
+        templates.insert("dir_list".to_string(), templates::DIR_LIST.to_string());
+        templates.insert("not_found".to_string(), templates::NOT_FOUND.to_string());
+        let client = Client::new(&rpc_client, registry);
+        Ok(Arc::new(State {
+            config,
+            client,
+            rpc_client,
+            metrics,
+            handlebars: templates,
+            bad_bits,
+        }))
+    }
+
     pub fn server(
         self,
     ) -> axum::Server<hyper::server::conn::AddrIncoming, axum::routing::IntoMakeService<Router>>
@@ -89,6 +121,7 @@ mod tests {
             false,
             false,
             false,
+            "",
             0,
             RpcClientConfig {
                 gateway_addr: None,
