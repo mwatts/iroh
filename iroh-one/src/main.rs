@@ -14,8 +14,22 @@ use iroh_util::{iroh_home_path, make_config};
 use prometheus_client::registry::Registry;
 use tokio::sync::RwLock;
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() -> Result<()> {
+// #[tokio::main(flavor = "multi_thread")]
+fn main() -> Result<()> {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(48)
+        .max_blocking_threads(1024)
+        .thread_stack_size(32 * 1024)
+        .global_queue_interval(255)
+        .event_interval(255)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(something()).unwrap();
+    Ok(())
+}
+
+async fn something() -> Result<()> {
     let args = Args::parse();
 
     let sources = vec![iroh_home_path(CONFIG_FILE_NAME), args.cfg.clone()];
@@ -100,5 +114,6 @@ async fn main() -> Result<()> {
     core_task.abort();
 
     metrics_handle.shutdown();
+
     Ok(())
 }

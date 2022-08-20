@@ -422,7 +422,7 @@ async fn serve_fs(
     // FIXME: we currently only retrieve full cids
     let (mut body, metadata) = state
         .client
-        .get_file_simulated(
+        .get_file(
             req.resolved_path.clone(),
             &state.rpc_client,
             start_time,

@@ -1,9 +1,9 @@
 use anyhow::{bail, Result};
-use axum::http::{header::*};
+use axum::http::header::*;
 use config::{ConfigError, Map, Source, Value};
 
 use iroh_metrics::config::Config as MetricsConfig;
-use iroh_p2p::{Libp2pConfig};
+use iroh_p2p::Libp2pConfig;
 use iroh_rpc_client::Config as RpcClientConfig;
 use iroh_rpc_types::{gateway::GatewayServerAddr, Addr};
 use iroh_util::insert_into_config_map;
