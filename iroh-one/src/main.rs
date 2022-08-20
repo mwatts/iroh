@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(48)
         .max_blocking_threads(1024)
-        .thread_stack_size(32 * 1024)
+        .thread_stack_size(1024 * 1024)
         .global_queue_interval(255)
         .event_interval(255)
         .enable_all()
