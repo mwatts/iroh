@@ -155,18 +155,18 @@ async fn something() -> Result<()> {
         server.await.unwrap();
     });
 
-    let uds_server_task = {
-        let uds_server = core::uds_server(shared_state);
-        tokio::spawn(async move {
-            uds_server.await.unwrap();
-        })
-    };
+    // let uds_server_task = {
+    //     let uds_server = core::uds_server(shared_state);
+    //     tokio::spawn(async move {
+    //         uds_server.await.unwrap();
+    //     })
+    // };
 
     iroh_util::block_until_sigint().await;
 
     store_rpc.abort();
     p2p_rpc.abort();
-    uds_server_task.abort();
+    // uds_server_task.abort();
     core_task.abort();
 
     metrics_handle.shutdown();

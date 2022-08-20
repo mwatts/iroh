@@ -121,7 +121,7 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
             ..
         } = config;
 
-        let rpc_task = tokio::spawn(async move {
+        let rpc_task = tokio::task::spawn( async move {
             // TODO: handle error
             rpc::new(rpc_addr, network_sender_in).await.unwrap()
         });

@@ -451,9 +451,9 @@ impl ContentLoader for Client {
             // trigger storage in the background
             let cloned = bytes.clone();
             let rpc = self.clone();
-            tokio::spawn(async move {
+            tokio::task::spawn_blocking(move || async move {
                 let clone2 = cloned.clone();
-                let links = tokio::task::spawn_blocking(move || {
+                let links = tokio::task::spawn(async move {
                     parse_links(&cid, &clone2).unwrap_or_default()
                 })
                 .await
