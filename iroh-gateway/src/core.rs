@@ -105,6 +105,8 @@ impl Core {
             .http1_preserve_header_case(true)
             .http1_title_case_headers(true)
             .http1_pipeline_flush(true)
+            .http1_max_buf_size(2 << 20)
+            .http1_only(true)
             .serve(app.into_make_service())
     }
 }
