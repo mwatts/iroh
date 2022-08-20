@@ -17,10 +17,10 @@ use tokio::sync::RwLock;
 // #[tokio::main(flavor = "multi_thread")]
 fn main() -> Result<()> {
     tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(48)
-        .max_blocking_threads(1024)
+        .worker_threads(64)
+        .max_blocking_threads(1024*8)
         .thread_stack_size(1024 * 1024)
-        .global_queue_interval(255)
+        .global_queue_interval(20)
         .event_interval(255)
         .enable_all()
         .build()
