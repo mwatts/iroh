@@ -12,6 +12,7 @@ use iroh_resolver::resolver::OutPrettyReader;
 use iroh_resolver::resolver::OutType;
 use iroh_resolver::resolver::Resolver;
 use iroh_resolver::resolver::Source;
+use iroh_resolver::resolver::UnixfsType;
 use prometheus_client::registry::Registry;
 use tokio::io::AsyncReadExt;
 use tokio_util::io::ReaderStream;
@@ -96,7 +97,7 @@ impl Client {
                 path,
                 size: Some(0),
                 typ: OutType::Unixfs,
-                unixfs_type: None,
+                unixfs_type: Some(UnixfsType::File),
                 resolved_path: Vec::new(),
                 source: iroh_resolver::resolver::Source::Http,
             };
