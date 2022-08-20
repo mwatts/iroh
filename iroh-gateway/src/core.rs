@@ -104,6 +104,7 @@ impl Core {
         axum::Server::bind(&addr.parse().unwrap())
             .http1_preserve_header_case(true)
             .http1_title_case_headers(true)
+            .http1_pipeline_flush(true)
             .serve(app.into_make_service())
     }
 }
