@@ -156,7 +156,7 @@ async fn something() -> Result<()> {
         )
         .await?;
 
-        let rpc_addr = rcfg
+        let rpc_addr = config
             .clone()
             .server_rpc_addr()?
             .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
