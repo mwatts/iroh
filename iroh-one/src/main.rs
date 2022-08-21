@@ -145,11 +145,11 @@ async fn something() -> Result<()> {
     let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
 
     // for i in 0..args.num_threads.unwrap_or(1) {
-        let mut rcfg = config.clone();
-        rcfg.gateway.port = rcfg.gateway.port + i;
+        // let mut rcfg = config.clone();
+        // rcfg.gateway.port = rcfg.gateway.port;
 
         let shared_state = Core::make_state(
-            Arc::new(rcfg.clone()),
+            Arc::new(config.clone()),
             gw_metrics.clone(),
             &mut prom_registry,
             Arc::clone(&bad_bits),
