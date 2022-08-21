@@ -107,7 +107,7 @@ async fn something() -> Result<()> {
     config.gateway.port = args.port.unwrap_or(9050);
 
     config.gateway.raw_gateway = "dweb.link".to_string();
-    config.store.path = PathBuf::from("./iroh-store-db");
+    config.store.path = PathBuf::from(format!("./iroh-store-db-{}", config.gateway.port));
 
     let (store_rpc, p2p_rpc) = {
         let (store_recv, store_sender) = Addr::new_mem();
