@@ -149,16 +149,16 @@ async fn something() -> Result<()> {
         // rcfg.gateway.port = rcfg.gateway.port;
 
         let shared_state = Core::make_state(
-            Arc::new(config.clone()),
+            Arc::new(config),
             gw_metrics.clone(),
             &mut prom_registry,
             Arc::clone(&bad_bits),
         )
         .await?;
 
-        let rpc_addr = config
-            .server_rpc_addr()?
-            .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
+        // let rpc_addr = config
+        //     .server_rpc_addr()?
+        //     .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
         let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
 
         let server = handler.server();
