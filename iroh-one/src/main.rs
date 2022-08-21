@@ -103,6 +103,9 @@ async fn something() -> Result<()> {
     )
     .unwrap();
 
+    // println!("PORT: {}", args.port.unwrap_or(9050));
+    config.gateway.port = args.port.unwrap_or(9050);
+
     config.gateway.raw_gateway = "dweb.link".to_string();
     config.store.path = PathBuf::from("./iroh-store-db");
 
@@ -139,7 +142,7 @@ async fn something() -> Result<()> {
 
     let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
 
-    for i in 0..8 {
+    for i in 0..args.num_threads.unwrap_or(1) {
         let mut rcfg = config.clone();
         rcfg.gateway.port = rcfg.gateway.port + i;
 
