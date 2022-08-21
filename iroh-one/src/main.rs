@@ -105,6 +105,8 @@ async fn something() -> Result<()> {
 
     // println!("PORT: {}", args.port.unwrap_or(9050));
     config.gateway.port = args.port.unwrap_or(9050);
+    let p2p_port = 4444 + config.gateway.port as u16 - 9050;
+    config.p2p.libp2p.listening_multiaddr = format!("/ip4/0.0.0.0/tcp/{}", p2p_port).parse().unwrap();
 
     config.gateway.raw_gateway = "dweb.link".to_string();
     config.store.path = PathBuf::from(format!("./iroh-store-db-{}", config.gateway.port));
