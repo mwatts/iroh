@@ -144,7 +144,7 @@ async fn something() -> Result<()> {
 
     let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
 
-    for i in 0..args.num_threads.unwrap_or(1) {
+    // for i in 0..args.num_threads.unwrap_or(1) {
         let mut rcfg = config.clone();
         rcfg.gateway.port = rcfg.gateway.port + i;
 
@@ -168,7 +168,7 @@ async fn something() -> Result<()> {
             server.await.unwrap();
         });
         core_tasks.push(core_task);
-    }
+    // }
 
     // let uds_server_task = {
     //     let uds_server = core::uds_server(shared_state);
