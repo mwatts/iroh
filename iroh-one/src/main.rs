@@ -15,7 +15,6 @@ use prometheus_client::registry::Registry;
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
-
 fn default_wt() -> usize {
     8 // 64
 }
@@ -25,7 +24,7 @@ fn default_max_t() -> usize {
 }
 
 fn default_tss() -> usize {
-    1024*1024 // 1024*1024
+    1024 * 1024 // 1024*1024
 }
 
 fn default_gqi() -> u32 {
@@ -38,15 +37,15 @@ fn default_ei() -> u32 {
 
 #[derive(Deserialize, Debug)]
 struct TkCfg {
-    #[serde(default="default_wt")]
+    #[serde(default = "default_wt")]
     pub worker_threads: usize,
-    #[serde(default="default_max_t")]
+    #[serde(default = "default_max_t")]
     pub max_blocking_threads: usize,
-    #[serde(default="default_tss")]
+    #[serde(default = "default_tss")]
     pub thead_stack_size: usize,
-    #[serde(default="default_gqi")]
+    #[serde(default = "default_gqi")]
     pub global_queue_interval: u32,
-    #[serde(default="default_ei")]
+    #[serde(default = "default_ei")]
     pub event_interval: u32,
 }
 
@@ -64,10 +63,12 @@ impl Default for TkCfg {
 
 // #[tokio::main(flavor = "multi_thread")]
 fn main() -> Result<()> {
-
     let tkcfg = match envy::prefixed("FOO_").from_env::<TkCfg>() {
         Ok(config) => config,
-        Err(err) => {println!("error parsing config from env: {}", err); TkCfg::default()},
+        Err(err) => {
+            println!("error parsing config from env: {}", err);
+            TkCfg::default()
+        }
     };
 
     println!("{:#?}", tkcfg);
@@ -81,7 +82,8 @@ fn main() -> Result<()> {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(something()).unwrap();
+        .block_on(something())
+        .unwrap();
     Ok(())
 }
 
@@ -135,25 +137,33 @@ async fn something() -> Result<()> {
         false => Arc::new(None),
     };
 
-    let shared_state = Core::make_state(
-        Arc::new(config),
-        gw_metrics,
-        &mut prom_registry,
-        Arc::clone(&bad_bits),
-    )
-    .await?;
+    let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
 
-    let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
+    for i in 0..8 {
+        let mut rcfg = config.clone();
+        rcfg.gateway.port = rcfg.gateway.port + i;
 
-    let metrics_handle =
-        iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
-            .await
-            .expect("failed to initialize metrics");
-    let server = handler.server();
-    println!("HTTP endpoint listening on {}", server.local_addr());
-    let core_task = tokio::spawn(async move {
-        server.await.unwrap();
-    });
+        let shared_state = Core::make_state(
+            Arc::new(rcfg.clone()),
+            gw_metrics.clone(),
+            &mut prom_registry,
+            Arc::clone(&bad_bits),
+        )
+        .await?;
+
+        let rpc_addr = rcfg
+            .clone()
+            .server_rpc_addr()?
+            .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
+        let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
+
+        let server = handler.server();
+        println!("HTTP endpoint listening on {}", server.local_addr());
+        let core_task = tokio::spawn(async move {
+            server.await.unwrap();
+        });
+        core_tasks.push(core_task);
+    }
 
     // let uds_server_task = {
     //     let uds_server = core::uds_server(shared_state);
@@ -162,12 +172,21 @@ async fn something() -> Result<()> {
     //     })
     // };
 
+    let metrics_handle =
+        iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
+            .await
+            .expect("failed to initialize metrics");
+
     iroh_util::block_until_sigint().await;
 
     store_rpc.abort();
     p2p_rpc.abort();
+
+    for ct in core_tasks {
+        ct.abort();
+    }
     // uds_server_task.abort();
-    core_task.abort();
+    // core_task.abort();
 
     metrics_handle.shutdown();
 
