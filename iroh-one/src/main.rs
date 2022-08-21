@@ -123,7 +123,7 @@ async fn something() -> Result<()> {
     };
 
     config.rpc_client.raw_gateway = Some(config.gateway.raw_gateway.clone());
-    config.gateway.rpc_client = config.rpc_client.clone();
+    // config.gateway.rpc_client = config.rpc_client.clone();
     config.p2p.rpc_client = config.rpc_client.clone();
     config.store.rpc_client = config.rpc_client.clone();
 
@@ -142,7 +142,7 @@ async fn something() -> Result<()> {
         false => Arc::new(None),
     };
 
-    let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
+    // let mut core_tasks = Vec::<tokio::task::JoinHandle<()>>::new();
 
     // for i in 0..args.num_threads.unwrap_or(1) {
         // let mut rcfg = config.clone();
@@ -157,7 +157,6 @@ async fn something() -> Result<()> {
         .await?;
 
         let rpc_addr = config
-            .clone()
             .server_rpc_addr()?
             .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
         let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
@@ -167,7 +166,7 @@ async fn something() -> Result<()> {
         let core_task = tokio::spawn(async move {
             server.await.unwrap();
         });
-        core_tasks.push(core_task);
+        // core_tasks.push(core_task);
     // }
 
     // let uds_server_task = {
@@ -187,11 +186,11 @@ async fn something() -> Result<()> {
     store_rpc.abort();
     p2p_rpc.abort();
 
-    for ct in core_tasks {
-        ct.abort();
-    }
+    // for ct in core_tasks {
+    //     ct.abort();
+    // }
     // uds_server_task.abort();
-    // core_task.abort();
+    core_task.abort();
 
     metrics_handle.shutdown();
 
