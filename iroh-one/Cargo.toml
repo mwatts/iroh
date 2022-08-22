@@ -8,6 +8,7 @@ repository = "https://github.com/dignifiedquire/iroh"
 version = "0.1.0"
 
 [dependencies]
+envy = "0.4.2"
 anyhow = "1"
 async-trait = "0.1.56"
 axum = "0.5.1"

@@ -1,14 +1,18 @@
 use std::sync::Arc;
 
 use axum::body::StreamBody;
+use axum::extract::Path;
+use futures::stream;
 use futures::StreamExt;
 use iroh_metrics::gateway::Metrics;
 use iroh_resolver::resolver::CidOrDomain;
 use iroh_resolver::resolver::Metadata;
 use iroh_resolver::resolver::OutMetrics;
 use iroh_resolver::resolver::OutPrettyReader;
+use iroh_resolver::resolver::OutType;
 use iroh_resolver::resolver::Resolver;
 use iroh_resolver::resolver::Source;
+use iroh_resolver::resolver::UnixfsType;
 use prometheus_client::registry::Registry;
 use tokio::io::AsyncReadExt;
 use tokio_util::io::ReaderStream;
@@ -72,6 +76,39 @@ impl Client {
         let body = StreamBody::new(stream);
 
         Ok((body, metadata))
+    }
+
+    #[tracing::instrument(skip(self, rpc_client, metrics))]
+    pub async fn get_file_simulated(
+        &self,
+        path: iroh_resolver::resolver::Path,
+        rpc_client: &iroh_rpc_client::Client,
+        start_time: std::time::Instant,
+        metrics: &Metrics,
+    ) -> Result<
+        (
+            StreamBody<futures::stream::Iter<std::vec::IntoIter<Result<String, std::io::Error>>>>,
+            Metadata,
+        ),
+        String,
+    > {
+        let chunks: Vec<Result<_, std::io::Error>> = vec![
+            Ok("Hello,".to_string()),
+            Ok(" ".to_string()),
+            Ok("world!".to_string()),
+        ];
+        let stream = stream::iter(chunks);
+        let sb = StreamBody::new(stream);
+        let metadata = Metadata {
+            path,
+            size: Some(0),
+            typ: OutType::Unixfs,
+            unixfs_type: Some(UnixfsType::File),
+            resolved_path: Vec::new(),
+            source: iroh_resolver::resolver::Source::Http,
+        };
+
+        Ok((sb, metadata))
     }
 
     #[tracing::instrument(skip(self, rpc_client, metrics))]

@@ -12,10 +12,84 @@ use iroh_one::{
 use iroh_rpc_types::Addr;
 use iroh_util::{iroh_home_path, make_config};
 use prometheus_client::registry::Registry;
+use serde::Deserialize;
 use tokio::sync::RwLock;
+
+fn default_wt() -> usize {
+    8 // 64
+}
+
+fn default_max_t() -> usize {
+    512 // 1024*8
+}
+
+fn default_tss() -> usize {
+    1024 * 1024 // 1024*1024
+}
+
+fn default_gqi() -> u32 {
+    31 // 20
+}
+
+fn default_ei() -> u32 {
+    255 // 255
+}
+
+#[derive(Deserialize, Debug)]
+struct TkCfg {
+    #[serde(default = "default_wt")]
+    pub worker_threads: usize,
+    #[serde(default = "default_max_t")]
+    pub max_blocking_threads: usize,
+    #[serde(default = "default_tss")]
+    pub thead_stack_size: usize,
+    #[serde(default = "default_gqi")]
+    pub global_queue_interval: u32,
+    #[serde(default = "default_ei")]
+    pub event_interval: u32,
+}
+
+impl Default for TkCfg {
+    fn default() -> Self {
+        TkCfg {
+            worker_threads: default_wt(),
+            max_blocking_threads: default_max_t(),
+            thead_stack_size: default_tss(),
+            global_queue_interval: default_gqi(),
+            event_interval: default_ei(),
+        }
+    }
+}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
+    let tkcfg = match envy::prefixed("FOO_").from_env::<TkCfg>() {
+        Ok(config) => config,
+        Err(err) => {
+            println!("error parsing config from env: {}", err);
+            TkCfg::default()
+        }
+    };
+
+    println!("{:#?}", tkcfg);
+
+    // tokio::runtime::Builder::new_multi_thread()
+    //     .worker_threads(tkcfg.worker_threads)
+    //     .max_blocking_threads(tkcfg.max_blocking_threads)
+    //     .thread_stack_size(tkcfg.thead_stack_size)
+    //     .global_queue_interval(tkcfg.global_queue_interval)
+    //     .event_interval(tkcfg.event_interval)
+    //     .enable_all()
+    //     .build()
+    //     .unwrap()
+    //     .block_on(something())
+    //     .unwrap();
+    // Ok(())
+
+    something().await
+}
+
+async fn something() -> Result<()> {
     let args = Args::parse();
 
     let sources = vec![iroh_home_path(CONFIG_FILE_NAME), args.cfg.clone()];
@@ -31,8 +105,13 @@ async fn main() -> Result<()> {
     )
     .unwrap();
 
+    // println!("PORT: {}", args.port.unwrap_or(9050));
+    config.gateway.port = args.port.unwrap_or(9050);
+    let p2p_port = 4444 + config.gateway.port as u16 - 9050;
+    config.p2p.libp2p.listening_multiaddr = format!("/ip4/0.0.0.0/tcp/{}", p2p_port).parse().unwrap();
+
     config.gateway.raw_gateway = "dweb.link".to_string();
-    config.store.path = PathBuf::from("./iroh-store-db");
+    config.store.path = PathBuf::from(format!("./iroh-store-db-{}", config.gateway.port));
 
     let (store_rpc, p2p_rpc) = {
         let (store_recv, store_sender) = Addr::new_mem();
@@ -100,5 +179,6 @@ async fn main() -> Result<()> {
     core_task.abort();
 
     metrics_handle.shutdown();
+
     Ok(())
 }

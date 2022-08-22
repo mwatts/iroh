@@ -7,21 +7,23 @@ use std::path::PathBuf;
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
     #[clap(short, long)]
-    port: Option<u16>,
+    pub port: Option<u16>,
     #[clap(short, long)]
-    writeable: Option<bool>,
+    pub writeable: Option<bool>,
     #[clap(short, long)]
-    fetch: Option<bool>,
+    pub fetch: Option<bool>,
     #[clap(short, long)]
-    cache: Option<bool>,
+    pub cache: Option<bool>,
     #[clap(long)]
-    metrics: bool,
+    pub metrics: bool,
     #[clap(long)]
-    tracing: bool,
+    pub tracing: bool,
     #[clap(long)]
     pub cfg: Option<PathBuf>,
     #[clap(long)]
-    denylist: bool,
+    pub denylist: bool,
+    #[clap(long)]
+    pub num_threads: Option<u16>,
 }
 
 impl Args {

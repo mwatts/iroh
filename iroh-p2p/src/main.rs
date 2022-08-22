@@ -52,6 +52,8 @@ async fn main() -> anyhow::Result<()> {
     )
     .unwrap();
 
+     println!("Config {:?}", network_config);
+     
     let mut prom_registry = Registry::default();
     let metrics_config =
         metrics::metrics_config_with_compile_time_info(network_config.metrics.clone());

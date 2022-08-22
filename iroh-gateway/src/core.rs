@@ -104,7 +104,36 @@ impl Core {
         axum::Server::bind(&addr.parse().unwrap())
             .http1_preserve_header_case(true)
             .http1_title_case_headers(true)
+            // .http1_pipeline_flush(true)
+            // .http1_max_buf_size(2 << 20)
+            // .http1_only(true)
+            // .executor(Executor::new())
             .serve(app.into_make_service())
+    }
+}
+
+use hyper::rt;
+use std::future::Future;
+use std::pin::Pin;
+
+type ExFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
+
+#[derive(Copy, Clone)]
+pub struct Executor;
+
+impl<F> rt::Executor<F> for Executor
+where
+    F: Future + Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        tokio::task::spawn(async move {
+            tokio::task::unconstrained(Box::pin(fut)).await;
+        });
+    }
+}
+impl Executor {
+    pub fn new() -> Self {
+        Executor
     }
 }
 
