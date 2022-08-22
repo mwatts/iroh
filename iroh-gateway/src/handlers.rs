@@ -63,7 +63,7 @@ pub fn get_app_routes(state: &Arc<State>) -> Router {
                 .layer(Extension(Arc::clone(state)))
                 .layer(HandleErrorLayer::new(middleware_error_handler))
                 .load_shed()
-                .concurrency_limit(2048)
+                .concurrency_limit(1024 * 1024 * 4)
                 .timeout(Duration::from_secs(60))
                 .into_inner(),
         )
