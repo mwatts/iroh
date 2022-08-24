@@ -98,10 +98,10 @@ async fn main() -> Result<()> {
 
     let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
-    let metrics_handle =
-        iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
-            .await
-            .expect("failed to initialize metrics");
+    // let metrics_handle =
+    //     iroh_metrics::MetricsHandle::from_registry_with_tracer(metrics_config, prom_registry)
+    //         .await
+    //         .expect("failed to initialize metrics");
     let server = handler.server();
     println!("listening on {}", server.local_addr());
     let core_task = tokio::spawn(async move {
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
     iroh_util::block_until_sigint().await;
     core_task.abort();
 
-    metrics_handle.shutdown();
+    // metrics_handle.shutdown();
     if let Some(handle) = bad_bits_handle {
         handle.abort();
     }
