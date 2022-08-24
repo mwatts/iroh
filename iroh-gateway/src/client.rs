@@ -96,15 +96,15 @@ impl Client {
             .ttf_block
             .set(start_time.elapsed().as_millis() as u64);
         let metadata = res.metadata().clone();
-        if metadata.source == Source::Bitswap {
-            metrics
-                .hist_ttfb
-                .observe(start_time.elapsed().as_millis() as f64);
-        } else {
-            metrics
-                .hist_ttfb_cached
-                .observe(start_time.elapsed().as_millis() as f64);
-        }
+        // if metadata.source == Source::Bitswap {
+        //     metrics
+        //         .hist_ttfb
+        //         .observe(start_time.elapsed().as_millis() as f64);
+        // } else {
+        //     metrics
+        //         .hist_ttfb_cached
+        //         .observe(start_time.elapsed().as_millis() as f64);
+        // }
 
         if res.is_dir() {
             let body = FileResult::Directory(res);
@@ -148,15 +148,15 @@ impl Client {
                             .ttf_block
                             .set(start_time.elapsed().as_millis() as u64);
                         let metadata = res.metadata().clone();
-                        if metadata.source == Source::Bitswap {
-                            metrics
-                                .hist_ttfb
-                                .observe(start_time.elapsed().as_millis() as f64);
-                        } else {
-                            metrics
-                                .hist_ttfb_cached
-                                .observe(start_time.elapsed().as_millis() as f64);
-                        }
+                        // if metadata.source == Source::Bitswap {
+                        //     metrics
+                        //         .hist_ttfb
+                        //         .observe(start_time.elapsed().as_millis() as f64);
+                        // } else {
+                        //     metrics
+                        //         .hist_ttfb_cached
+                        //         .observe(start_time.elapsed().as_millis() as f64);
+                        // }
                         let reader = res.pretty(
                             self.resolver.clone(),
                             OutMetrics {

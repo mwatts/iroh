@@ -227,9 +227,9 @@ impl Store {
         batch.put_cf(cf_meta, &id_bytes, metadata_bytes);
         batch.put_cf(cf_graph, &id_bytes, graph_bytes);
         self.inner.content.write(batch)?;
-        self.metrics
-            .put_request_time
-            .observe(start.elapsed().as_secs_f64());
+        // self.metrics
+        //     .put_request_time
+        //     .observe(start.elapsed().as_secs_f64());
         self.metrics.put_bytes.inc_by(blob_size as u64);
 
         Ok(())
@@ -253,9 +253,9 @@ impl Store {
                 Ok(None)
             }
         };
-        self.metrics
-            .get_request_time
-            .observe(start.elapsed().as_secs_f64());
+        // self.metrics
+        //     .get_request_time
+        //     .observe(start.elapsed().as_secs_f64());
         res
     }
 
@@ -294,9 +294,9 @@ impl Store {
                 Ok(None)
             }
         };
-        self.metrics
-            .get_links_request_time
-            .observe(start.elapsed().as_secs_f64());
+        // self.metrics
+        //     .get_links_request_time
+        //     .observe(start.elapsed().as_secs_f64());
         res
     }
 

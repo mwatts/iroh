@@ -333,9 +333,9 @@ impl OutMetrics {
             self.metrics
                 .tts_file
                 .set(self.start.elapsed().as_millis() as u64);
-            self.metrics
-                .hist_ttsf
-                .observe(self.start.elapsed().as_millis() as f64);
+            // self.metrics
+            //     .hist_ttsf
+            //     .observe(self.start.elapsed().as_millis() as f64);
         }
         self.metrics.bytes_streamed.inc_by(bytes_read as u64);
     }
