@@ -78,18 +78,34 @@ async fn main() -> Result<()> {
         false => Arc::new(None),
     };
 
-    let shared_state = Core::make_state(Arc::new(config.clone()), Arc::clone(&bad_bits)).await?;
+    // let shared_state = Core::make_state(Arc::new(config.clone()), Arc::clone(&bad_bits)).await?;
 
-    let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
+    // let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
 
     let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
         .await
         .expect("failed to initialize metrics");
-    let server = handler.server();
-    println!("HTTP endpoint listening on {}", server.local_addr());
-    let core_task = tokio::spawn(async move {
-        server.await.unwrap();
-    });
+    // let server = handler.server();
+    // println!("HTTP endpoint listening on {}", server.local_addr());
+    // let core_task = tokio::spawn(async move {
+        
+    // });
+
+    let mut handlers = Vec::new();
+        for i in 0..num_cpus::get() {
+            // let shared_state = Core::make_state(, Arc::clone(&bad_bits)).await?;
+            let c = Core::new(Arc::new(config.clone()), None, Arc::new(None)).await?;
+            let h = std::thread::spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap()
+                    .block_on(Core::serve_internal(c));
+            });
+            handlers.push(h);
+        }
+
+    // handler.multi_server();
 
     #[cfg(feature = "uds-gateway")]
     let uds_server_task = {
@@ -109,7 +125,7 @@ async fn main() -> Result<()> {
     p2p_rpc.abort();
     #[cfg(feature = "uds-gateway")]
     uds_server_task.abort();
-    core_task.abort();
+    // core_task.abort();
 
     metrics_handle.shutdown();
     Ok(())
