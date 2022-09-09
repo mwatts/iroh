@@ -645,6 +645,7 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
             }
             Event::Identify(e) => {
                 libp2p_metrics().record(&*e);
+                warn!("tick: identify {:?}", e);
                 if let IdentifyEvent::Received {
                     peer_id,
                     info:
@@ -1073,7 +1074,7 @@ mod tests {
             p2p_addr: Some(rpc_client_addr),
             ..Default::default()
         };
-        let p2p_task = tokio::task::spawn(async move {
+        let p2p_task = tokio::task::spawn_blocking(move || async move {
             p2p.run().await.unwrap();
         });
 
