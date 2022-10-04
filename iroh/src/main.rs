@@ -35,36 +35,44 @@ fn cli() -> Command<'static> {
         .subcommand(
             Command::new("get")
                 .about("get things")
-                .arg_required_else_help(true)
                 .arg(arg!(<CID> ... "CID to get"))
                 .args(vec![
                     arg!(-o --output [OUTPUT] "The path where the output should be stored.").value_parser(clap::value_parser!(PathBuf)),
-                ]),
+                ])
+                .after_help(constants::GET_AFTER_TEXT)
+                .arg_required_else_help(true),
         )
         .subcommand(
             Command::new("id")
-            .about("identify iroh")
-            .after_help(constants::ID_AFTER_TEXT)
+                .about("identify iroh")
+                .arg(arg!(--"peerid-base" "Encoding used for peer IDs: Can either be a multibase encoded CID or a base58btc encoded multihash. Takes {b58mh|base36|k|base32|b...}. Default: b58mh.")
+                    .default_value("b58mh"))
+                .after_help(constants::ID_AFTER_TEXT)
+                .arg_required_else_help(true),
         )
         .subcommand(
             Command::new("p2p")
                 .about("peer-2-peer commands")
-                .after_help(constants::P2P_AFTER_TEXT)
                 .subcommand_required(true)
+                .after_help(constants::P2P_AFTER_TEXT)
                 .arg_required_else_help(true)
                 .subcommand(
                     Command::new("connect")
                         .about("connect to a peer")
+                        .arg(arg!(<ADDRESS> ... "address of a peer to connect to"))
                         .after_help(constants::P2P_CONNECT_AFTER_TEXT)
+                        .arg_required_else_help(true),
                 )
                 .subcommand(
                     Command::new("disconnect")
                         .about("disconnect from a peer")
+                        .arg(arg!(<ADDRESS> ... "address of a peer to disconnect from"))
                         .after_help(constants::P2P_DISCONNECT_AFTER_TEXT)
+                        .arg_required_else_help(true),
                 )
         )
         .subcommand(
-            Command::new("start")
+            Command::new("connect")
                 .about("start a long running IPFS process")   
                 .after_help(constants::START_AFTER_TEXT)
         )
