@@ -82,7 +82,7 @@ impl ContentLoader for Loader {
         let providers = self.providers.lock().await.clone();
         ensure!(!providers.is_empty(), "no providers supplied");
 
-        let res = self.client.try_p2p()?.fetch_bitswap(cid, providers).await;
+        let res = self.client.p2p.clone().unwrap().get().fetch_bitswap(cid, providers).await;
         let bytes = match res {
             Ok(bytes) => bytes,
             Err(err) => {
@@ -198,7 +198,7 @@ impl P2pNode {
     }
 
     pub async fn close(self) -> Result<()> {
-        self.rpc.p2p.unwrap().shutdown().await?;
+        self.rpc.p2p.clone().unwrap().get().shutdown().await?;
         self.store_task.abort();
         self.p2p_task.await?;
         self.store_task.await.ok();

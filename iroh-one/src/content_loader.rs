@@ -37,7 +37,7 @@ impl ContentLoader for RacingLoader {
                 warn!("failed to fetch data from store {}: {:?}", cid, err);
             }
         }
-        let p2p = self.rpc_client.try_p2p()?;
+        let p2p = self.rpc_client.clone().try_p2p()?;
         let providers = p2p.fetch_providers(&cid).await?;
         let bytes = p2p.fetch_bitswap(cid, providers).await?;
 

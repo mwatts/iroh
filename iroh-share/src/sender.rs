@@ -61,7 +61,7 @@ impl Sender {
 
         let (done_sender, done_receiver) = oneshot();
 
-        let p2p_rpc = p2p.rpc().try_p2p()?;
+        let p2p_rpc = p2p.rpc().clone().try_p2p().unwrap();
         let store = p2p.rpc().clone().try_store().unwrap();
         let (root, num_parts) = {
             let parts = root_dir.encode();
