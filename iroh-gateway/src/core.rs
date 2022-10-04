@@ -151,9 +151,8 @@ mod tests {
         );
         config.set_default_headers();
 
-        let rpc_addr = "grpc://0.0.0.0:0".parse().unwrap();
         let content_loader = RpcClient::new(config.rpc_client().clone()).await.unwrap();
-        let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None), content_loader)
+        let handler = Core::new(Arc::new(config), Arc::new(None), content_loader)
             .await
             .unwrap();
         let server = handler.server();

@@ -23,7 +23,8 @@ impl ContentLoader for RacingLoader {
         // TODO: better strategy
 
         let cid = *cid;
-        match self.rpc_client.try_store()?.get(cid).await {
+        let getter = self.rpc_client.store.clone().unwrap().get();
+        match getter.get(cid).await {
             Ok(Some(data)) => {
                 trace!("retrieved from store");
                 return Ok(LoadedCid {
@@ -49,7 +50,8 @@ impl ContentLoader for RacingLoader {
             let len = cloned.len();
             let links_len = links.len();
             if let Some(store_rpc) = rpc.store.as_ref() {
-                match store_rpc.put(cid, cloned, links).await {
+                let getter = store_rpc.clone().get();
+                match getter.put(cid, cloned, links).await {
                     Ok(_) => debug!("stored {} ({}bytes, {}links)", cid, len, links_len),
                     Err(err) => {
                         warn!("failed to store {}: {:?}", cid, err);

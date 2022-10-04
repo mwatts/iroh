@@ -17,8 +17,8 @@ use tokio::sync::RwLock;
 use tracing::{debug, error};
 
 async fn serve(_: usize, config: Config) {
-        let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
-        let handler = Core::new(Arc::new(config), Arc::new(None), content_loader)
+    let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
+    let handler = Core::new(Arc::new(config), Arc::new(None), content_loader)
         .await
         .unwrap();
     let server = handler.server();
@@ -51,9 +51,9 @@ async fn main() -> Result<()> {
         true => Arc::new(Some(RwLock::new(BadBits::new()))),
         false => Arc::new(None),
     };
-    let rpc_addr = config
-        .server_rpc_addr()?
-        .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
+    // let rpc_addr = config
+    //     .server_rpc_addr()?
+    //     .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
 
     let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
@@ -71,7 +71,6 @@ async fn main() -> Result<()> {
 
     let mut handlers = Vec::new();
     #[cfg(target_os = "linux")]
-    // #[cfg(not(target_os = "linux"))]
     {
         for i in 0..num_cpus::get() {
             let cc = config.clone();
@@ -85,7 +84,7 @@ async fn main() -> Result<()> {
             handlers.push(h);
         }
     }
-    // #[cfg(target_os = "linux")]
+
     #[cfg(not(target_os = "linux"))]
     {
         let core_task = std::thread::spawn(move || {
@@ -100,10 +99,9 @@ async fn main() -> Result<()> {
 
     iroh_util::block_until_sigint().await;
 
-        for h in handlers {
+    for h in handlers {
         h.join().unwrap();
     }
-
 
     metrics_handle.shutdown();
     if let Some(handle) = bad_bits_handle {

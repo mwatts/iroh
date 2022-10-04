@@ -11,7 +11,21 @@ use crate::store::StoreClient;
 pub struct Client {
     pub gateway: Option<GatewayClient>,
     pub p2p: Option<P2pClient>,
-    pub store: Option<StoreClient>,
+    pub store: Option<StoreLBClient>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StoreLBClient {
+    pos: usize,
+    clients: Vec<StoreClient>
+}
+
+impl StoreLBClient {
+    pub fn get(&mut self) -> StoreClient {
+        let c = self.clients.get(self.pos).unwrap();
+        self.pos = (self.pos + 1) % self.clients.len();
+        c.clone()
+    }
 }
 
 impl Client {
@@ -42,10 +56,15 @@ impl Client {
             None
         };
         let store = if let Some(addr) = store_addr {
-            Some(
-                StoreClient::new(addr)
+            let mut slb = StoreLBClient{pos: 0, clients: vec![]};
+            for i in 0..16 {
+                let sc = StoreClient::new(addr.clone())
                     .await
-                    .context("Could not create store rpc client")?,
+                    .context("Could not create store rpc client")?;
+                slb.clients.push(sc);
+            }
+            Some(
+                slb
             )
         } else {
             None
@@ -70,10 +89,16 @@ impl Client {
             .ok_or_else(|| anyhow!("missing rpc gateway connnection"))
     }
 
-    pub fn try_store(&self) -> Result<&StoreClient> {
-        self.store
-            .as_ref()
-            .ok_or_else(|| anyhow!("missing rpc store connnection"))
+    pub fn try_store(self) -> Result<StoreClient> {
+        // if let Some(mut slc) = self.store.clone() {
+        //     let c = slc.get().clone();
+        //     return Ok(&c);
+        // }
+        let c = self.store.unwrap().clone().get();
+        return Ok(c);
+        // Err(anyhow!("missing rpc store connnection"))
+            // .ok_or_else(|| anyhow!("missing rpc store connnection"));
+        
     }
 
     #[cfg(feature = "grpc")]
@@ -88,12 +113,12 @@ impl Client {
         } else {
             None
         };
-        let s = if let Some(ref s) = self.store {
-            Some(s.check().await)
-        } else {
-            None
-        };
-        crate::status::StatusTable::new(g, p, s)
+        // let s = if let Some(ref s) = self.store {
+        //     Some(s.check().await)
+        // } else {
+        //     None
+        // };
+        crate::status::StatusTable::new(g, p, None)
     }
 
     #[cfg(feature = "grpc")]
@@ -110,10 +135,10 @@ impl Client {
                 let p = p.watch().await;
                 streams.push(p.boxed());
             }
-            if let Some(ref s) = self.store {
-                let s = s.watch().await;
-                streams.push(s.boxed());
-            }
+            // if let Some(ref s) = self.store {
+            //     let s = s.watch().await;
+            //     streams.push(s.boxed());
+            // }
 
             let mut stream = futures::stream::select_all(streams);
             while let Some(status) = stream.next().await {

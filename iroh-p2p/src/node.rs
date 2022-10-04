@@ -320,7 +320,8 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
                         InboundRequest::Want { cid, sender, .. } => {
                             info!("bitswap want {}", cid);
                             if let Some(rpc_store) = self.rpc_client.store.as_ref() {
-                                match rpc_store.get(cid).await {
+                                let getter = rpc_store.clone().get();
+                                match getter.get(cid).await {
                                     Ok(Some(data)) => {
                                         trace!("Found data for: {}", cid);
                                         if let Err(e) = self

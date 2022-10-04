@@ -65,7 +65,8 @@ impl Loader {
 impl ContentLoader for Loader {
     async fn load_cid(&self, cid: &Cid) -> Result<LoadedCid> {
         let cid = *cid;
-        match self.client.try_store()?.get(cid).await {
+        let getter = self.client.store.clone().unwrap().get();
+        match getter.get(cid).await {
             Ok(Some(data)) => {
                 return Ok(LoadedCid {
                     data,
