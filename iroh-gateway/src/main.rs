@@ -57,9 +57,9 @@ async fn main() -> Result<()> {
 
     let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
-    // let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
-    //     .await
-    //     .expect("failed to initialize metrics");
+    let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
+        .await
+        .expect("failed to initialize metrics");
 
     #[cfg(unix)]
     {
@@ -74,15 +74,12 @@ async fn main() -> Result<()> {
     // #[cfg(not(target_os = "linux"))]
     {
         for i in 0..num_cpus::get() {
-            // let hc = handler.clone();
             let cc = config.clone();
-            // let rc = rpc_addr.clone();
             let h = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap()
-                    // .block_on(serve(i, hc));
                     .block_on(serve(i, cc));
             });
             handlers.push(h);
@@ -108,7 +105,7 @@ async fn main() -> Result<()> {
     }
 
 
-    // metrics_handle.shutdown();
+    metrics_handle.shutdown();
     if let Some(handle) = bad_bits_handle {
         handle.abort();
     }
