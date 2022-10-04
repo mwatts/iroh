@@ -70,8 +70,8 @@ fn main() -> Result<()> {
     }
 
     let mut handlers = Vec::new();
-    // #[cfg(target_os = "linux")]
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "linux")]
+    // #[cfg(not(target_os = "linux"))]
     {
         for i in 0..num_cpus::get() {
             // let hc = handler.clone();
@@ -88,8 +88,8 @@ fn main() -> Result<()> {
             handlers.push(h);
         }
     }
-    #[cfg(target_os = "linux")]
-    // #[cfg(not(target_os = "linux"))]
+    // #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "linux"))]
     {
         let core_task = std::thread::spawn(move || {
             tokio::runtime::Builder::new_multi_thread()
