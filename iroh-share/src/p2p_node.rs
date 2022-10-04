@@ -67,7 +67,7 @@ impl ContentLoader for Loader {
         let cid = *cid;
         let providers = self.providers.lock().await.clone();
 
-        match self.client.try_store()?.get(cid).await {
+        match self.client.clone().try_store()?.get(cid).await {
             Ok(Some(data)) => {
                 return Ok(LoadedCid {
                     data,
@@ -84,7 +84,7 @@ impl ContentLoader for Loader {
 
         // TODO: track context id
         let res = self
-            .client
+            .client.clone()
             .try_p2p()?
             .fetch_bitswap(0, cid, providers.clone())
             .await;
@@ -202,7 +202,7 @@ impl P2pNode {
     }
 
     pub async fn close(self) -> Result<()> {
-        self.rpc.p2p.unwrap().shutdown().await?;
+        // self.rpc.p2p.unwrap().shutdown().await?;
         self.store_task.abort();
         self.p2p_task.await?;
         self.store_task.await.ok();

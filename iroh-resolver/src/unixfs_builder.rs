@@ -273,7 +273,8 @@ pub trait Store {
 #[async_trait]
 impl Store for &Client {
     async fn put(&self, cid: Cid, blob: Bytes, links: Vec<Cid>) -> Result<()> {
-        self.try_store()?.put(cid, blob, links).await
+        let sc = self.store.clone().unwrap().get();
+        sc.put(cid, blob, links).await
     }
 }
 

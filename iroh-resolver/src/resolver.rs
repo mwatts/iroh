@@ -477,7 +477,7 @@ async fn fetch_providers(
     client: &Client,
     cid: &Cid,
 ) -> Result<impl Stream<Item = Result<HashSet<PeerId>>>> {
-    let p2p = client.try_p2p()?;
+    let p2p = client.clone().try_p2p()?;
 
     let a = p2p.fetch_providers_dht(cid).await?;
     let b = p2p.fetch_providers_bitswap(ctx.into(), cid).await?;
@@ -575,7 +575,7 @@ impl ContentLoader for Client {
         // TODO: better strategy
 
         let cid = *cid;
-        match self.try_store()?.get(cid).await {
+        match self.clone().try_store()?.get(cid).await {
             Ok(Some(data)) => {
                 trace!("{:?} retrieved from store", ctx.id());
                 return Ok(LoadedCid {
@@ -595,7 +595,7 @@ impl ContentLoader for Client {
         }
 
         let mut providers_stream = ctx.load_providers(self, &cid).await?;
-        let p2p = self.try_p2p()?.clone();
+        let p2p = self.clone().try_p2p()?.clone();
         let providers = ctx.providers().await;
         let ctx = ctx.clone();
         let ctx_id = ctx.id();
@@ -659,7 +659,7 @@ impl ContentLoader for Client {
         });
 
         // launch fetching using the initial set of cached providers
-        let bytes = self
+        let bytes = self.clone()
             .try_p2p()?
             .fetch_bitswap(ctx_id.into(), cid, providers)
             .await?;
@@ -681,7 +681,7 @@ impl ContentLoader for Client {
             let len = clone.len();
             let links_len = links.len();
             if let Some(store_rpc) = store.as_ref() {
-                match store_rpc.put(cid, clone, links).await {
+                match store_rpc.clone().get().put(cid, clone, links).await {
                     Ok(_) => {
                         debug!(
                             "{:?} stored {} ({}bytes, {}links)",
