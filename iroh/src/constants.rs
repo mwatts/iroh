@@ -59,11 +59,41 @@ Adds the content of <path> to IPFS. Use -r to add directories.
 ";
 
 
-pub static GET_AFTER_TEXT: &str = "";
-pub static ID_AFTER_TEXT: &str = "";
+pub static GET_AFTER_TEXT: &str = "
+Stores to disk the data contained an IPFS or IPNS object(s) at the given path.
+
+By default, the output will be stored at './<ipfs-path>', but an alternate
+path can be specified with '--output=<path>' or '-o=<path>'.
+
+To output a TAR archive instead of unpacked files, use '--archive' or '-a'.
+
+To compress the output with GZIP compression, use '--compress' or '-C'. You
+may also specify the level of compression by specifying '-l=<1-9>'.";
+
+pub static P2P_ID_AFTER_TEXT: &str = "
+Prints out information about the specified peer.
+If no peer is specified, prints out information for local peers.
+
+'ipfs id' supports the format option for output with the following keys:
+<id> : The peers id.
+<aver>: Agent version.
+<pver>: Protocol version.
+<pubkey>: Public key.
+<addrs>: Addresses (newline delimited).
+
+EXAMPLE:
+
+    ipfs id Qmece2RkXhsKe5CRooNisBTh4SK119KrXXGmoK6V3kb8aH -f=\"<addrs>
+";
+
 pub static P2P_AFTER_TEXT: &str = "";
-pub static P2P_CONNECT_AFTER_TEXT: &str = "";
-pub static P2P_DISCONNECT_AFTER_TEXT: &str = "";
+
+pub static P2P_CONNECT_AFTER_TEXT: &str = "'ipfs swarm connect' opens a new direct connection to a peer address.
+
+The address format is an IPFS multiaddr:
+
+ipfs swarm connect /ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ";
+
 pub static START_AFTER_TEXT: &str = "
 The daemon will start listening on ports on the network, which are
 documented in (and can be modified through) 'ipfs config Addresses'.

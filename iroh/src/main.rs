@@ -20,7 +20,8 @@ fn cli() -> Command<'static> {
                         .required(false),
                     arg!(-H --hidden "Include files that are hidden. Only takes effect on recursive add.")
                         .required(false),
-                    arg!(-p --progress "Stream progress data. Default: true"),
+                    arg!(-p --progress "Stream progress data. Default: true")
+                        .required(false),
                     arg!(-n --"only-hash" "Only chunk and hash. Do not write to disk.")
                         .required(false),
                     arg!(-w --"wrap-with-directory" "Wrap files with a directory object. Default: true"),
@@ -34,10 +35,8 @@ fn cli() -> Command<'static> {
             Command::new("get")
                 .about("get things")
                 .arg(arg!(<CID> ... "CID to get"))
-                .args(vec![
-                    arg!(-o --output [OUTPUT] "The path where the output should be stored.").value_parser(clap::value_parser!(PathBuf))
-                        .required(false),
-                ])
+                .arg(arg!(-o --output [OUTPUT] "The path where the output should be stored.").value_parser(clap::value_parser!(PathBuf))
+                        .required(false))
                 .after_help(constants::GET_AFTER_TEXT)
                 .arg_required_else_help(true),
         )
@@ -49,10 +48,8 @@ fn cli() -> Command<'static> {
                 .arg_required_else_help(true)
                 .subcommand(
                     Command::new("id")
-                    .about("identify iroh")
-                    .arg(arg!(--"peerid-base" "Encoding used for peer IDs: Can either be a multibase encoded CID or a base58btc encoded multihash. Takes {b58mh|base36|k|base32|b...}. Default: b58mh.")
-                        .default_value("b58mh"))
-                    .after_help(constants::ID_AFTER_TEXT)
+                    .about("show IPFS node id info")
+                    .after_help(constants::P2P_ID_AFTER_TEXT)
                 )
                 .subcommand(
                     Command::new("connect")
@@ -70,6 +67,7 @@ fn cli() -> Command<'static> {
         .subcommand(
             Command::new("status")
                 .about("report current status of iroh")
+                .arg(arg!(-w --watch "poll process for changes"))
                 .after_help(constants::STATUS_AFTER_TEXT)
         )
 }
