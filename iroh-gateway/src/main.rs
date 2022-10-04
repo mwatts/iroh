@@ -73,7 +73,7 @@ fn main() -> Result<()> {
     #[cfg(target_os = "linux")]
     {
         for i in 0..num_cpus::get() {
-            let hc = handler.clone();
+            // let hc = handler.clone();
             let h = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
