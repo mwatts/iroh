@@ -72,7 +72,8 @@ async fn main() -> Result<()> {
     let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
 
     let mut handlers = Vec::new();
-    #[cfg(target_os = "linux")]
+    // #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "linux"))]
     {
         for i in 0..num_cpus::get() {
             let cc = config.clone();
@@ -88,7 +89,8 @@ async fn main() -> Result<()> {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
+    // #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "linux")]
     {
         let core_task = std::thread::spawn(move || {
             tokio::runtime::Builder::new_multi_thread()
