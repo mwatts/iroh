@@ -405,7 +405,7 @@ impl<'a> Store for &StoreAndProvideClient<'a> {
     async fn put(&self, cid: Cid, blob: Bytes, links: Vec<Cid>) -> Result<()> {
         let sc = self.client.store.clone().unwrap().get();
         sc.put(cid, blob, links).await?;
-        self.client.try_p2p()?.start_providing(&cid).await
+        self.client.p2p.clone().unwrap().get().start_providing(&cid).await
     }
 }
 

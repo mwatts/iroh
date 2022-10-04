@@ -461,7 +461,7 @@ impl ContentLoader for Client {
                 warn!("failed to fetch data from store {}: {:?}", cid, err);
             }
         }
-        let p2p = self.try_p2p()?;
+        let p2p = self.p2p.clone().unwrap().get();
         let providers = p2p.fetch_providers(&cid).await?;
         let bytes = p2p.fetch_bitswap(cid, providers).await?;
 

@@ -847,7 +847,7 @@ mod tests {
             let c = "QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR"
                 .parse()
                 .unwrap();
-            let providers = client.p2p.unwrap().fetch_providers(&c).await?;
+            let providers = client.p2p.clone().unwrap().get().fetch_providers(&c).await?;
             assert!(!providers.is_empty());
             assert!(providers.len() >= PROVIDER_LIMIT);
         }
