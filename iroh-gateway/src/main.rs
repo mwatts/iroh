@@ -26,8 +26,8 @@ async fn serve(_: usize, config: Config) {
     server.await.unwrap();
 }
 
-// #[tokio::main(flavor = "multi_thread")]
-fn main() -> Result<()> {
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     let cfg_path = iroh_config_path(CONFIG_FILE_NAME)?;
