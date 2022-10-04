@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 #[cfg(feature = "grpc")]
 use futures::{Stream, StreamExt};
+use rand::Rng;
 
 use crate::config::Config;
 use crate::gateway::GatewayClient;
@@ -22,8 +23,10 @@ pub struct StoreLBClient {
 
 impl StoreLBClient {
     pub fn get(&mut self) -> StoreClient {
-        let c = self.clients.get(self.pos).unwrap();
-        self.pos = (self.pos + 1) % self.clients.len();
+        let mut rng = rand::thread_rng();
+        let i: usize = rng.gen_range(0..=self.clients.len());
+        let c = self.clients.get(i).unwrap();
+        // self.pos = (self.pos + 1) % self.clients.len();
         c.clone()
     }
 }
