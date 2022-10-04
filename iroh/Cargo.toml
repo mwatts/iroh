@@ -7,4 +7,4 @@ readme = "README.md"
 description = "coming soon"
 
 [dependencies]
-
+clap = {version = "3.1.14", features = ["derive"]}
