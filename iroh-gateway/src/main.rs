@@ -9,22 +9,25 @@ use iroh_gateway::{
     core::Core,
     metrics,
 };
-#[cfg(target_os = "linux")]
-use iroh_resolver::resolver::ContentLoader;
+// use iroh_resolver::resolver::ContentLoader;
 use iroh_rpc_client::Client as RpcClient;
+use iroh_rpc_types::gateway::GatewayServerAddr;
 use iroh_util::{iroh_config_path, make_config};
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
-#[cfg(target_os = "linux")]
-async fn serve<T: ContentLoader + std::marker::Unpin>(_: usize, core: Core<T>) {
-    let server = core.server();
+async fn serve(_: usize, config: Config, rpc_addr: GatewayServerAddr) {
+        let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
+        let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None), content_loader)
+        .await
+        .unwrap();
+    let server = handler.server();
     println!("listening on {}", server.local_addr());
     server.await.unwrap();
 }
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() -> Result<()> {
+// #[tokio::main(flavor = "multi_thread")]
+fn main() -> Result<()> {
     let args = Args::parse();
 
     let cfg_path = iroh_config_path(CONFIG_FILE_NAME)?;
@@ -51,20 +54,12 @@ async fn main() -> Result<()> {
     let rpc_addr = config
         .server_rpc_addr()?
         .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
-    let content_loader = RpcClient::new(config.rpc_client.clone()).await?;
-    let handler = Core::new(
-        Arc::new(config),
-        rpc_addr,
-        Arc::clone(&bad_bits),
-        content_loader,
-    )
-    .await?;
 
-    let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
+    // let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
-    let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
-        .await
-        .expect("failed to initialize metrics");
+    // let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
+    //     .await
+    //     .expect("failed to initialize metrics");
 
     #[cfg(unix)]
     {
@@ -84,7 +79,8 @@ async fn main() -> Result<()> {
                     .enable_all()
                     .build()
                     .unwrap()
-                    .block_on(serve(i, hc));
+                    // .block_on(serve(i, hc));
+                    .block_on(serve(i, config.clone(), rpc_addr));
             });
             handlers.push(h);
         }
@@ -92,25 +88,27 @@ async fn main() -> Result<()> {
 
     #[cfg(not(target_os = "linux"))]
     {
-        let server = handler.server();
-        println!("listening on {}", server.local_addr());
-        let core_task = tokio::spawn(async move {
-            server.await.unwrap();
+        let core_task = std::thread::spawn(move || {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(serve(0, config.clone(), rpc_addr));
         });
         handlers.push(core_task);
     }
 
-    iroh_util::block_until_sigint().await;
+    // iroh_util::block_until_sigint().await;
 
-    #[cfg(not(target_os = "linux"))]
-    for h in handlers {
-        h.abort();
+        for h in handlers {
+        h.join().unwrap();
     }
 
-    metrics_handle.shutdown();
-    if let Some(handle) = bad_bits_handle {
-        handle.abort();
-    }
+
+    // metrics_handle.shutdown();
+    // if let Some(handle) = bad_bits_handle {
+    //     handle.abort();
+    // }
 
     Ok(())
 }

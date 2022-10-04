@@ -109,12 +109,12 @@ impl<T: ContentLoader + std::marker::Unpin> Core<T> {
         .unwrap();
 
         sock.set_reuse_address(true).unwrap();
-        // on windows and many BSD based distributions (including macOS) this does not 
+        // on windows and many BSD based distributions (including macOS) this does not
         // load balance across the sockets and thus still actively only uses 1 binding
         // on windows setting SO_REUSEADDR is equivalent to SO_REUSEADDR + SO_REUSEPORT on unix based systems
         #[cfg(unix)]
-        sock.set_reuse_port(true).unwrap();   
-        sock.set_nodelay(true);     
+        sock.set_reuse_port(true).unwrap();
+        sock.set_nodelay(true).unwrap();
         sock.set_nonblocking(true).unwrap();
         sock.bind(&addr.into()).unwrap();
         sock.listen(8192 * 2).unwrap();
