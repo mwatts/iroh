@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
         .server_rpc_addr()?
         .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
 
-    // let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
+    let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
     // let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
     //     .await
@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
         handlers.push(core_task);
     }
 
-    // iroh_util::block_until_sigint().await;
+    iroh_util::block_until_sigint().await;
 
         for h in handlers {
         h.join().unwrap();
@@ -109,9 +109,9 @@ async fn main() -> Result<()> {
 
 
     // metrics_handle.shutdown();
-    // if let Some(handle) = bad_bits_handle {
-    //     handle.abort();
-    // }
+    if let Some(handle) = bad_bits_handle {
+        handle.abort();
+    }
 
     Ok(())
 }
