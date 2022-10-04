@@ -16,8 +16,8 @@ use iroh_util::{iroh_config_path, make_config};
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
-async fn serve(_: usize, config: Config) {
-    let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
+async fn serve(_: usize, config: Config, content_loader: RpcClient) {
+    
     let handler = Core::new(Arc::new(config), Arc::new(None), content_loader)
         .await
         .unwrap();
@@ -57,9 +57,9 @@ async fn main() -> Result<()> {
 
     let bad_bits_handle = bad_bits::spawn_bad_bits_updater(Arc::clone(&bad_bits));
 
-    let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
-        .await
-        .expect("failed to initialize metrics");
+    // let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
+    //     .await
+    //     .expect("failed to initialize metrics");
 
     #[cfg(unix)]
     {
@@ -69,17 +69,20 @@ async fn main() -> Result<()> {
         }
     }
 
+    let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
+
     let mut handlers = Vec::new();
     #[cfg(target_os = "linux")]
     {
         for i in 0..num_cpus::get() {
             let cc = config.clone();
+            let cl = content_loader.clone();
             let h = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap()
-                    .block_on(serve(i, cc));
+                    .block_on(serve(i, cc, cl));
             });
             handlers.push(h);
         }
@@ -92,7 +95,7 @@ async fn main() -> Result<()> {
                 .enable_all()
                 .build()
                 .unwrap()
-                .block_on(serve(0, config.clone()));
+                .block_on(serve(0, config.clone(), content_loader));
         });
         handlers.push(core_task);
     }
@@ -103,7 +106,7 @@ async fn main() -> Result<()> {
         h.join().unwrap();
     }
 
-    metrics_handle.shutdown();
+    // metrics_handle.shutdown();
     if let Some(handle) = bad_bits_handle {
         handle.abort();
     }
