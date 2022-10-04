@@ -35,15 +35,15 @@ pub struct State<T: ContentLoader> {
 impl<T: ContentLoader + std::marker::Unpin> Core<T> {
     pub async fn new(
         config: Arc<dyn StateConfig>,
-        rpc_addr: GatewayServerAddr,
+        // rpc_addr: GatewayServerAddr,
         bad_bits: Arc<Option<RwLock<BadBits>>>,
         content_loader: T,
     ) -> anyhow::Result<Self> {
-        tokio::spawn(async move {
-            if let Err(err) = rpc::new(rpc_addr, Gateway::default()).await {
-                tracing::error!("Failed to run gateway rpc handler: {}", err);
-            }
-        });
+        // tokio::spawn(async move {
+        //     if let Err(err) = rpc::new(rpc_addr, Gateway::default()).await {
+        //         tracing::error!("Failed to run gateway rpc handler: {}", err);
+        //     }
+        // });
         let mut templates = HashMap::new();
         templates.insert("dir_list".to_string(), templates::DIR_LIST.to_string());
         templates.insert("not_found".to_string(), templates::NOT_FOUND.to_string());

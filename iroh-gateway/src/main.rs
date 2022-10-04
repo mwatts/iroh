@@ -16,9 +16,9 @@ use iroh_util::{iroh_config_path, make_config};
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
-async fn serve(_: usize, config: Config, rpc_addr: GatewayServerAddr) {
+async fn serve(_: usize, config: Config) {
         let content_loader = RpcClient::new(config.rpc_client.clone()).await.unwrap();
-        let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None), content_loader)
+        let handler = Core::new(Arc::new(config), Arc::new(None), content_loader)
         .await
         .unwrap();
     let server = handler.server();
@@ -70,30 +70,33 @@ fn main() -> Result<()> {
     }
 
     let mut handlers = Vec::new();
-    #[cfg(target_os = "linux")]
+    // #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "linux"))]
     {
         for i in 0..num_cpus::get() {
             // let hc = handler.clone();
+            let cc = config.clone();
+            // let rc = rpc_addr.clone();
             let h = std::thread::spawn(move || {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap()
                     // .block_on(serve(i, hc));
-                    .block_on(serve(i, config.clone(), rpc_addr));
+                    .block_on(serve(i, cc));
             });
             handlers.push(h);
         }
     }
-
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "linux")]
+    // #[cfg(not(target_os = "linux"))]
     {
         let core_task = std::thread::spawn(move || {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
                 .unwrap()
-                .block_on(serve(0, config.clone(), rpc_addr));
+                .block_on(serve(0, config.clone()));
         });
         handlers.push(core_task);
     }
