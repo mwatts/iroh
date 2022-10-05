@@ -34,10 +34,12 @@ fn cli() -> Command<'static> {
         )
         .subcommand(
             Command::new("get")
-                .about("get things")
-                .arg(arg!(<CID> ... "CID to get"))
-                .arg(arg!(-o --output [OUTPUT] "The path where the output should be stored.").value_parser(clap::value_parser!(PathBuf))
+                .about("Fetch IPFS content and write it to disk")
+                .arg(arg!(<"ipfs-path"> "CID or CID/with/path/qualifier to get"))
+                .arg(arg!([output] "filesystem path to write to. Default: $CID").value_parser(clap::value_parser!(PathBuf))
                         .required(false))
+                .arg(arg!(--"force-fetch" "ignore local cache & fetch all content from the network")
+                    .required(false))
                 .after_help(constants::GET_AFTER_TEXT)
                 .arg_required_else_help(true),
         )

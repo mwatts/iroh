@@ -63,17 +63,18 @@ file/directory with the same flags is deterministic, which means the same input
 paired with the same configuration flags will give the same root hash.
 ";
 
-
 pub static GET_AFTER_TEXT: &str = "
-Stores to disk the data contained an IPFS or IPNS object(s) at the given path.
+Download file or directory specified by <ipfs-path> from IPFS into [path]. If 
+path already exists and is a file then it's overwritten with the new downloaded 
+file. If path already exists and is a directory, the command fails with an 
+error. If path already exists, is a file and the downloaded data is a directory,
+that's an error.
 
-By default, the output will be stored at './<ipfs-path>', but an alternate
-path can be specified with '--output=<path>' or '-o=<path>'.
+By default, the output will be written to './<ipfs-path>'.
 
-To output a TAR archive instead of unpacked files, use '--archive' or '-a'.
-
-To compress the output with GZIP compression, use '--compress' or '-C'. You
-may also specify the level of compression by specifying '-l=<1-9>'.";
+If <ipfs-path> is already present in the iroh store, no network call will 
+be made.
+";
 
 pub static P2P_ID_AFTER_TEXT: &str = "
 Prints out information about the specified peer.
