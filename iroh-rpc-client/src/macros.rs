@@ -21,12 +21,17 @@ macro_rules! impl_client {
                     match addr {
                         #[cfg(feature = "grpc")]
                         Addr::GrpcHttp2(addr) => {
-                            let conn = Endpoint::new(format!("http://{}", addr))?
-                                .keep_alive_while_idle(true)
-                                .connect_lazy();
+                            let mut endpoints = vec![];
+                            for _i in 0..32 {
+                                let conn = Endpoint::new(format!("http://{}", addr))?
+                                .keep_alive_while_idle(true);
+                                endpoints.push(conn);
+                            }
+                            
+                            let channel = tonic::transport::Channel::balance_list(endpoints.into_iter());
 
-                            let client = [<Grpc $label Client>]::new(conn.clone());
-                            let health = HealthClient::new(conn);
+                            let client = [<Grpc $label Client>]::new(channel.clone());
+                            let health = HealthClient::new(channel);
 
                             Ok([<$label Client>] {
                                 backend: [<$label ClientBackend>]::Grpc { client, health },
