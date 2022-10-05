@@ -1,61 +1,66 @@
 
 
 pub static ADD_AFTER_TEXT: &str = "
-Adds the content of <path> to IPFS. Use -r to add directories.
-  Note that directories are added recursively, to form the IPFS
-  MerkleDAG.
+NOTE: IROH CURRENTLY PROVIDES NO WAY TO REMOVE CONTENT ONCE ADDED. This will be
+addressed in a future release.
 
-  If the daemon is not running, it will just add locally.
-  If the daemon is started later, it will be advertised after a few
-  seconds when the reprovider runs.
+Add copies the file or directory specified by of <path> into the iroh store, 
+splitting the input file into a tree of immutable blocks. Each block is labeled 
+by the hash of its content. The final output of the add command is the hash of 
+the root of the tree, which contains references to all other blocks:
 
-  The wrap option, '-w', wraps the file (or files, if using the
-  recursive option) in a directory. This directory contains only
-  the files which have been added, and means that the file retains
-  its filename. For example:
+  > iroh add example.jpg
+  added [HASH] example.jpg
+  added [ROOT_CID]
 
-    > ipfs add example.jpg
-    added QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH example.jpg
-    > ipfs add example.jpg -w
-    added QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH example.jpg
-    added QmaG4FuMqEBnQNn3C8XJ5bpW8kLs7zq2ZXgHptJHbKDDVx
+[ROOT_CID] is a Content IDentifier (or CID), which is a hash plus some extra
+metadata. The opposite of the add command is the get command, which accepts a 
+CID and turns it back into files or directories:
 
-  You can now refer to the added file in a gateway, like so:
+  > iroh get [ROOT_CID]
+  [ROOT_CID] written to working directory
 
-    /ipfs/QmaG4FuMqEBnQNn3C8XJ5bpW8kLs7zq2ZXgHptJHbKDDVx/example.jpg
+The stored result of add is a 'MerkleDAG'. Merkle proofs (hashes) are a fast 
+method of proving and checking data inclusion, and the tree formed by chunking 
+the input into blocks is always a directed acyclic graph (DAG). These MerkleDAGs
+can be provably checked for tamper resistance by anyone who fetches all blocks 
+in the tree, which means MerkleDAGs can be provided by anyone, without concern 
+for tampering.
 
-  The chunker option, '-s', specifies the chunking strategy that dictates
-  how to break files into blocks. Blocks with same content can
-  be deduplicated. Different chunking strategies will produce different
-  hashes for the same file. The default is a fixed block size of
-  256 * 1024 bytes, 'size-262144'. Alternatively, you can use the
-  Buzhash or Rabin fingerprint chunker for content defined chunking by
-  specifying buzhash or rabin-[min]-[avg]-[max] (where min/avg/max refer
-  to the desired chunk sizes in bytes), e.g. 'rabin-262144-524288-1048576'.
+Once content is added to iroh, it can be provided & rehosted by any other IPFS
+node with iroh start:
 
-  The following examples use very small byte sizes to demonstrate the
-  properties of the different chunkers on a small file. You'll likely
-  want to use a 1024 times larger chunk sizes for most files.
+  > iroh start
 
-    > ipfs add --chunker=size-2048 ipfs-logo.svg
-    added QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87 ipfs-logo.svg
-    > ipfs add --chunker=rabin-512-1024-2048 ipfs-logo.svg
-    added Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn ipfs-logo.svg
+By default all content added to iroh is made available to the network, and the
+default network is the public IPFS network. We can prove this by creating an
+empty iroh instance. Run this in a separate terminal with iroh start running:
 
-  You can now check what blocks have been created by:
+  > IROH_PATH=iroh_temp && iroh get [ROOT_CID]
 
-    > ipfs object links QmafrLBfzRLV4XSH1XcaMMeaXEUhDJjmtDfsYU95TrWG87
-    QmY6yj1GsermExDXoosVE3aSPxdMNYr6aKuw3nA8LoWPRS 2059
-    Qmf7ZQeSxq2fJVJbCmgTrLLVN9tDR9Wy5k75DxQKuz5Gyt 1195
-    > ipfs object links Qmf1hDN65tR55Ubh2RN1FPxr69xq3giVBz1KApsresY8Gn
-    QmY6yj1GsermExDXoosVE3aSPxdMNYr6aKuw3nA8LoWPRS 2059
-    QmerURi9k4XzKCaaPbsK6BL5pMEjF7PGphjDvkkjDtsVf3 868
-    QmQB28iwSriSUSMqG2nXDTLtdPHgWb4rebBrU7Q1j4vxPv 338
+We can use an HTTPS gateway hosted at https://gateway.lol to fetch the content 
+from the node running with iroh start:
 
-  Finally, a note on hash determinism. While not guaranteed, adding the same
-  file/directory with the same flags will almost always result in the same output
-  hash. However, almost all of the flags provided by this command (other than pin,
-  only-hash, and progress/status related flags) will change the final hash.
+  > curl https://gateway.lol/ipfs/[ROOT_CID]/example.jpg
+
+In this case we're trusting whoever runs gateway.lol to verify the merkle proof
+for us, because the last mile of our request is over HTTPS, whereas 'iroh get'
+always performs this check locally.
+
+The wrap option, '-w', wraps the file (or files, if using the recursive option) 
+in a directory and is on by default. This directory contains only the files 
+which have been added so the input retains its filename. set -w=false for
+'raw' adds that lose their input name:
+
+    > iroh add example.jpg
+    added [CID] example.jpg
+    added [ROOT_CID]
+    > iroh add example.jpg -w=false
+    added [ROOT_CID] example.jpg
+
+Note that in both cases the CID of example.jpg is the same. Adding the same 
+file/directory with the same flags is deterministic, which means the same input 
+paired with the same configuration flags will give the same root hash.
 ";
 
 

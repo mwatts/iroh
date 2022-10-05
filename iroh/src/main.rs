@@ -7,16 +7,16 @@ fn cli() -> Command<'static> {
     Command::new("iroh")
         .about("A next generation IPFS implementation: https://iroh.computer")
         .subcommand_required(true)
+        .arg(arg!(-v --version "print iroh version information"))
         .arg_required_else_help(true)
         .allow_external_subcommands(true)
         .subcommand(
             Command::new("add")
-                .about("Add a file to IPFS")
+                .about("Add a file to iroh & make it available on IPFS")
                 .after_help(constants::ADD_AFTER_TEXT)
-                .arg(arg!(<PATH> "The path to a file to be added to IPFS"))
+                .arg(arg!(<PATH> "The path to a file or directory to be added"))
                 .args(vec![
-                    arg!(-r --recursive "Add directory paths recursively. Default: true"),
-                    arg!( --"stdin-name" ... "Assign a name if the file source is stdin")
+                    arg!(-r --recursive "Add directory paths recursively. Default: false")
                         .required(false),
                     arg!(-H --hidden "Include files that are hidden. Only takes effect on recursive add.")
                         .required(false),
@@ -25,6 +25,7 @@ fn cli() -> Command<'static> {
                     arg!(-n --"only-hash" "Only chunk and hash. Do not write to disk.")
                         .required(false),
                     arg!(-w --"wrap-with-directory" "Wrap files with a directory object. Default: true"),
+                    arg!(-C --"root-cid" "Output only the final Content Identifier (CID)"),
                     // we aren't going to do anything about pinning this release
                     // arg!(--pin "Pin this object when adding. Default: true."),
                         // .default_value(true)
