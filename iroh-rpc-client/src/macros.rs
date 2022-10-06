@@ -23,8 +23,8 @@ macro_rules! impl_client {
                         Addr::GrpcHttp2(addr) => {
                             let mut endpoints = vec![];
                             for _i in 0..32 {
-                                let conn = Endpoint::new(format!("http://{}", addr))?
-                                .keep_alive_while_idle(true);
+                                let conn = Endpoint::new(format!("http://{}", addr))?;
+                                // .keep_alive_while_idle(true);
                                 endpoints.push(conn);
                             }
                             
