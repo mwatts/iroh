@@ -1,4 +1,13 @@
 
+pub static IROH_AFTER_TEXT: &str = "
+IROH_PATH environment variable
+
+ipfs uses a repository in the local file system. By default, the repo is
+located at ~/.ipfs. To change the repo location, set the $IROH_PATH
+environment variable:
+
+  export IROH_PATH=/path/to/ipfsrepo
+";
 
 pub static ADD_AFTER_TEXT: &str = "
 NOTE: IROH CURRENTLY PROVIDES NO WAY TO REMOVE CONTENT ONCE ADDED. This will be
@@ -76,67 +85,80 @@ If <ipfs-path> is already present in the iroh store, no network call will
 be made.
 ";
 
-pub static P2P_ID_AFTER_TEXT: &str = "
-Prints out information about the specified peer.
-If no peer is specified, prints out information for local peers.
-
-'ipfs id' supports the format option for output with the following keys:
-<id> : The peers id.
-<aver>: Agent version.
-<pver>: Protocol version.
-<pubkey>: Public key.
-<addrs>: Addresses (newline delimited).
-
-EXAMPLE:
-
-    ipfs id Qmece2RkXhsKe5CRooNisBTh4SK119KrXXGmoK6V3kb8aH -f=\"<addrs>
+pub static P2P_LOOKUP_AFTER_TEXT: &str = "
+Takes as input a peer ID or address and prints the output of the libp2p-identify
+protocol. When provided with a peer ID, the address is looked up on the 
+Network's Distribted Hash Table (DHT) before connecting to the node. When 
+provided with a multiaddress, the connection dialed directly.
 ";
 
-pub static P2P_AFTER_TEXT: &str = "";
+pub static P2P_AFTER_TEXT: &str = "
+p2p commands all relate to peer-2-peer connectivity. See subcommands for
+additional details.";
 
-pub static P2P_CONNECT_AFTER_TEXT: &str = "'ipfs swarm connect' opens a new direct connection to a peer address.
+pub static P2P_CONNECT_AFTER_TEXT: &str = "
+Attempts to open a new direct connection to a peer address.
 
-The address format is an IPFS multiaddr:
+The address format is in multiaddr format
 
-ipfs swarm connect /ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ";
+  > iroh p2p connect /ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
+
+If only a peer identifier is provided, a DHT lookup
+
+for more info, see https://iroh.computer/docs/concepts#multiaddr
+";
 
 pub static START_AFTER_TEXT: &str = "
-The daemon will start listening on ports on the network, which are
-documented in (and can be modified through) 'ipfs config Addresses'.
-For example, to change the 'Gateway' port:
+start kicks off a long running process that manages p2p connections, serves any 
+configured APIs, and proxies access for other iroh processes to shared resources
+like store and network connections. While iroh start is running iroh will 
+initiate connections to other peers in the network to both provide and fetch 
+content, all of which can be governed through configuration.
 
-  ipfs config Addresses.Gateway /ip4/127.0.0.1/tcp/8082
-
-The API address can be changed the same way:
-
-  ipfs config Addresses.API /ip4/127.0.0.1/tcp/5002
-
-Make sure to restart the daemon after changing addresses.
-
-By default, the gateway is only accessible locally. To expose it to
-other computers in the network, use 0.0.0.0 as the ip address:
-
-  ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080
-
-Be careful if you expose the API. It is a security risk, as anyone could
-control your node remotely. If you need to control the node remotely,
-make sure to protect the port as you would other services or database
-(firewall, authenticated proxy, etc).
+When iroh start is running, it acquires a lock on shared resources. Running an
+iroh command from another terminal will be executed as a remote procedure call
+on the 'iroh start' process. To check if a command will run through 'iroh start'
+use `iroh status`.
 
 Shutdown
 
-To shut down the daemon, send a SIGINT signal to it (e.g. by pressing 'Ctrl-C')
+To stop iroh start, send a SIGINT signal to it (e.g. by pressing 'Ctrl-C')
 or send a SIGTERM signal to it (e.g. with 'kill'). It may take a while for the
 daemon to shutdown gracefully, but it can be killed forcibly by sending a
 second signal.
-
-IPFS_PATH environment variable
-
-ipfs uses a repository in the local file system. By default, the repo is
-located at ~/.ipfs. To change the repo location, set the $IPFS_PATH
-environment variable:
-
-  export IPFS_PATH=/path/to/ipfsrepo
 ";
-pub static STATUS_AFTER_TEXT: &str = "";
-pub static VERSION_AFTER_TEXT: &str = "";
+
+pub static STATUS_AFTER_TEXT: &str = "
+status reports the current operational setup of iroh. Use status as a go-to
+command for understanding where iroh commands are being processed. different
+ops configurations utilize different network and service implementations 
+under the hood, which can lead to varying performance characteristics.
+
+Status reports connectivity, which is either offline or online:
+
+  offline: iroh is not connected to any background process, all commands 
+           are one-off, any network connections are closed when a command
+           completes. Some network duties may be delegated to remote hosts.
+
+  online:  iroh has found a long-running process to issue commands to. Any
+           comand issued will be deletegated to the long-running process as a
+           remote procedure call
+
+If iroh is online, status also reports the service configuration of the
+long running process, including the health of the configured subsystem(s).
+Possible configurations fall into two buckets:
+
+  one:     Iroh is running with all services bundled into one single process,
+           this setup is common in desktop enviornments.
+
+  cloud:   Iroh is running with services split into separate processes, which
+           are speaking to each other via remote procedure calls.
+
+Use the --watch flag to continually poll for changes.
+
+Status reports no metrics about the running system aside from current service
+health. Instead all metrics are emitted through uniform tracing collection &
+reporting, which is intended to be consumed by tools like prometheus and 
+grafana. For more info on metrics collection, see 
+https://iroh.computer/docs/metrics
+";

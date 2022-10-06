@@ -45,18 +45,19 @@ fn cli() -> Command<'static> {
         )
         .subcommand(
             Command::new("p2p")
-                .about("peer-2-peer commands")
+                .about("Peer-2-peer commands")
                 .subcommand_required(true)
                 .after_help(constants::P2P_AFTER_TEXT)
                 .arg_required_else_help(true)
                 .subcommand(
-                    Command::new("id")
-                    .about("show IPFS node id info")
-                    .after_help(constants::P2P_ID_AFTER_TEXT)
+                    Command::new("lookup")
+                    .about("Retrieve info about a peer")
+                    .arg(arg!(<addr> "multiaddress or peer ID"))
+                    .after_help(constants::P2P_LOOKUP_AFTER_TEXT)
                 )
                 .subcommand(
                     Command::new("connect")
-                        .about("connect to a peer")
+                        .about("Connect to a peer")
                         .arg(arg!(<ADDRESS> ... "address of a peer to connect to"))
                         .after_help(constants::P2P_CONNECT_AFTER_TEXT)
                         .arg_required_else_help(true),
@@ -64,13 +65,13 @@ fn cli() -> Command<'static> {
         )
         .subcommand(
             Command::new("start")
-                .about("start a long running IPFS process")
+                .about("Start a long running IPFS process")
                 .after_help(constants::START_AFTER_TEXT)
         )
         .subcommand(
             Command::new("status")
-                .about("report current status of iroh")
-                .arg(arg!(-w --watch "poll process for changes"))
+                .about("Report current status of iroh")
+                .arg(arg!(-w --watch "Poll process for changes"))
                 .after_help(constants::STATUS_AFTER_TEXT)
         )
 }
