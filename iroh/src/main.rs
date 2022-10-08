@@ -8,6 +8,7 @@ fn cli() -> Command<'static> {
         .about("A next generation IPFS implementation: https://iroh.computer")
         .subcommand_required(true)
         .arg(arg!(-v --version "print iroh version information"))
+        .after_help(constants::IROH_AFTER_TEXT)
         .arg_required_else_help(true)
         .allow_external_subcommands(true)
         .subcommand(
@@ -58,7 +59,7 @@ fn cli() -> Command<'static> {
                 .subcommand(
                     Command::new("connect")
                         .about("Connect to a peer")
-                        .arg(arg!(<ADDRESS> ... "address of a peer to connect to"))
+                        .arg(arg!(<addr> ... "Multiaddr or peer ID of a peer to connect to"))
                         .after_help(constants::P2P_CONNECT_AFTER_TEXT)
                         .arg_required_else_help(true),
                 )

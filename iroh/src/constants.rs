@@ -1,8 +1,14 @@
 
 pub static IROH_AFTER_TEXT: &str = "
-commands within iroh requires a daemon to perform. 
+Iroh is a next-generation implementation the Interplanetary File System (IPFS). 
+IPFS is a networking protocol for exchanging content-addressed blocks of 
+immutable data. 'content-addressed' means referring to data by the hash of it's
+content, which makes the reference both unique and verifiable. These two 
+properties make it possible to get data from any node in the network that speaks
+the IPFS protocol, including IPFS content being served by other implementations
+of the protocol.
 
-  > iroh start
+For more info see https://iroh.computer/docs
 ";
 
 pub static ADD_AFTER_TEXT: &str = "
@@ -88,15 +94,21 @@ p2p commands all relate to peer-2-peer connectivity. See subcommands for
 additional details.";
 
 pub static P2P_CONNECT_AFTER_TEXT: &str = "
-Attempts to open a new direct connection to a peer address.
+Attempts to open a new direct connection to a peer address. By default p2p 
+continulously maintains an open set of peer connections based on requests &
+internal hueristics. Connect is useful in situations where it makes sense to
+manually force libp2p to dial a known peer. A common example includes when you
+know the multiaddr or peer ID of a peer that you would like to exchange data 
+with.
 
-The address format is in multiaddr format
+The address format is in multiaddr format. For example:
 
   > iroh p2p connect /ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ
 
-If only a peer identifier is provided, a DHT lookup
+for more info on multiaddrs see https://iroh.computer/docs/concepts#multiaddr
 
-for more info, see https://iroh.computer/docs/concepts#multiaddr
+If a peer ID is provided, connect first perform a distribtued hash table (DHT)
+lookup to learn the address of the given peer ID before dialing.
 ";
 
 pub static START_AFTER_TEXT: &str = "
