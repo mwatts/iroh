@@ -65,7 +65,7 @@ fn cli() -> Command<'static> {
         )
         .subcommand(
             Command::new("start")
-                .about("Start a long running IPFS process")
+                .about("Start iroh daemon(s)")
                 .after_help(constants::START_AFTER_TEXT)
         )
         .subcommand(
@@ -73,6 +73,11 @@ fn cli() -> Command<'static> {
                 .about("Report current status of iroh")
                 .arg(arg!(-w --watch "Poll process for changes"))
                 .after_help(constants::STATUS_AFTER_TEXT)
+        )
+        .subcommand(
+            Command::new("stop")
+                .about("Stop iroh daemon(s)")
+                .after_help(constants::STOP_AFTER_TEXT)
         )
 }
 

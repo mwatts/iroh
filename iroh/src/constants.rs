@@ -1,12 +1,8 @@
 
 pub static IROH_AFTER_TEXT: &str = "
-IROH_PATH environment variable
+commands within iroh requires a daemon to perform. 
 
-ipfs uses a repository in the local file system. By default, the repo is
-located at ~/.ipfs. To change the repo location, set the $IROH_PATH
-environment variable:
-
-  export IROH_PATH=/path/to/ipfsrepo
+  > iroh start
 ";
 
 pub static ADD_AFTER_TEXT: &str = "
@@ -35,11 +31,6 @@ the input into blocks is always a directed acyclic graph (DAG). These MerkleDAGs
 can be provably checked for tamper resistance by anyone who fetches all blocks 
 in the tree, which means MerkleDAGs can be provided by anyone, without concern 
 for tampering.
-
-Once content is added to iroh, it can be provided & rehosted by any other IPFS
-node with iroh start:
-
-  > iroh start
 
 By default all content added to iroh is made available to the network, and the
 default network is the public IPFS network. We can prove this by creating an
@@ -109,23 +100,40 @@ for more info, see https://iroh.computer/docs/concepts#multiaddr
 ";
 
 pub static START_AFTER_TEXT: &str = "
-start kicks off a long running process that manages p2p connections, serves any 
-configured APIs, and proxies access for other iroh processes to shared resources
-like store and network connections. While iroh start is running iroh will 
-initiate connections to other peers in the network to both provide and fetch 
-content, all of which can be governed through configuration.
+start kicks off one or more 'deamon' processes. An iroh deamon is a long running
+process that both handle requests and initiate required background work. Iroh 
+requires a running deamon to do anything meaningful.
 
-When iroh start is running, it acquires a lock on shared resources. Running an
-iroh command from another terminal will be executed as a remote procedure call
-on the 'iroh start' process. To check if a command will run through 'iroh start'
-use `iroh status`.
+The default daemon is iroh-one, a single executable that provides gateway, p2p 
+and store services. iroh start can be configured to run each service as
+separate processes if desired. See https://iroh.computer/docs/configuration for
+details.
 
-Shutdown
+Check the current status of the iroh daemon with 'iroh status', stop the iroh
+deamon with 'iroh stop'. See help text of the status & stop commands for more
+details.
 
-To stop iroh start, send a SIGINT signal to it (e.g. by pressing 'Ctrl-C')
-or send a SIGTERM signal to it (e.g. with 'kill'). It may take a while for the
-daemon to shutdown gracefully, but it can be killed forcibly by sending a
-second signal.
+Start is just a convenience shortcut for initiating the deamon process. It's 
+equivelant to running ./iroh-one from a terminal, and in many cases manually
+starting iroh daemons is preferrable. For example: when scheduleing via a
+service manager like systemd on linux, or when running iroh in the cloud via 
+DevOps platforms like Ansible or Kubernetes.
+
+When a deamon is running, it acquires a lock on shared resources. Only one 
+service can be running at a time with the same lock.
+";
+
+pub static STOP_AFTER_TEXT: &str = "
+stop checks for a running iroh daemon and halts any daemon process it finds.
+stop sends SIGINT to each process and waits for the process to exit gracefully.
+If the process does not exit gracefully on it's own within 30 seconds stop sends
+SIGKILL to the deamon process and exits.
+
+If stop finds no running processes it does nothing and exits with status code 0.
+
+Processes are identified via their process ID as recorded on the local program
+lock. If stop cannot find lock files on the local filesystem (possibly because
+iroh is configured to use a network-backed deamon), it will exit with an error.
 ";
 
 pub static STATUS_AFTER_TEXT: &str = "
