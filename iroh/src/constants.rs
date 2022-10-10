@@ -133,6 +133,16 @@ DevOps platforms like Ansible or Kubernetes.
 
 When a deamon is running, it acquires a lock on shared resources. Only one 
 service can be running at a time with the same lock.
+
+INITIALIZATION
+
+iroh services attempt to create any required-but-missing files when they start,
+which means the start command may need to create configuration, application 
+data, or cache files. Iroh services will exit with an error if they cannot write
+to required directories.
+
+To remove files created by iroh, see:
+  https://iroh.computer/docs/data-locations#uninstall
 ";
 
 pub static STOP_AFTER_TEXT: &str = "
@@ -182,3 +192,4 @@ reporting, which is intended to be consumed by tools like prometheus and
 grafana. For more info on metrics collection, see 
 https://iroh.computer/docs/metrics
 ";
+
