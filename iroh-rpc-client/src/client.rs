@@ -10,8 +10,8 @@ use crate::store::StoreClient;
 #[derive(Debug, Clone)]
 pub struct Client {
     pub gateway: Option<GatewayClient>,
-        pub p2p: Option<P2pLBClient>,
-    pub store: Option<StoreLBClient>,
+        p2p: Option<P2pLBClient>,
+    store: Option<StoreLBClient>,
 }
 
 #[derive(Debug, Clone)]
@@ -93,7 +93,7 @@ impl Client {
     }
 
     pub fn try_p2p(&self) -> Result<P2pClient> {
-        let c = self.p2p.clone().unwrap().get();
+        let c = self.clone().p2p.clone().unwrap().get();
         return Ok(c.clone());
     }
 
@@ -104,7 +104,7 @@ impl Client {
     }
 
     pub fn try_store(&self) -> Result<StoreClient> {
-        let c = self.store.clone().unwrap().get();
+        let c = self.clone().store.clone().unwrap().get();
         return Ok(c.clone());
     }
 
