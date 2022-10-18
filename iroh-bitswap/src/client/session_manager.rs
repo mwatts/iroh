@@ -155,8 +155,8 @@ impl SessionManager {
         provider_search_delay: Duration,
         rebroadcast_delay: Duration,
     ) -> Session {
-        if let Some(session) = self.inner.sessions.read().await.get(&session_id) {
-            return session.clone();
+        if let Some(session) = self.get_session(session_id).await {
+            return session;
         }
 
         self.new_session_with_id(session_id, provider_search_delay, rebroadcast_delay)
@@ -164,10 +164,20 @@ impl SessionManager {
     }
 
     pub async fn get_session(&self, session_id: u64) -> Option<Session> {
-        self.inner.sessions.read().await.get(&session_id).cloned()
+        let sessions = self.inner.sessions.read().await;
+        debug!(
+            "getting session {}, have sessions {:?}",
+            session_id, sessions
+        );
+        sessions.get(&session_id).cloned()
     }
 
     pub async fn remove_session(&self, session_id: u64) -> Result<()> {
+        debug!(
+            "removing session {} ({} sessions)",
+            session_id,
+            self.inner.sessions.read().await.len()
+        );
         let cancels = self
             .inner
             .session_interest_manager

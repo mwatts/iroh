@@ -479,14 +479,12 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
                                 ..
                             }) = self.kad_queries.get_mut(&QueryKey::ProviderKey(key))
                             {
-                                debug!("found providers: {:?}", providers);
                                 // filter out bad providers.
                                 let providers: HashSet<_> = providers
                                     .into_iter()
                                     .filter(|provider| {
                                         inc!(P2PMetrics::SkippedPeerKad);
                                         let is_bad = self.swarm.behaviour().is_bad_peer(provider);
-                                        debug!("filtering bad peer: {}", provider);
                                         !is_bad
                                     })
                                     .collect();

@@ -20,9 +20,9 @@ use libipld::error::{InvalidMultihash, UnsupportedMultihash};
 use libipld::prelude::Codec as _;
 use libipld::{Ipld, IpldCodec};
 use tokio::io::{AsyncRead, AsyncSeek};
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{debug, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 use iroh_metrics::{
     core::{MObserver, MRecorder},
@@ -648,7 +648,7 @@ pub struct Resolver<T: ContentLoader> {
     loader: T,
     next_id: Arc<AtomicU64>,
     worker: Option<Arc<(oneshot::Sender<()>, JoinHandle<()>)>>,
-    session_closer: mpsc::Sender<ContextId>,
+    session_closer: async_channel::Sender<ContextId>,
 }
 
 impl<T: ContentLoader> Drop for Resolver<T> {
@@ -658,7 +658,7 @@ impl<T: ContentLoader> Drop for Resolver<T> {
         }
         if Arc::strong_count(self.worker.as_ref().unwrap()) == 1 {
             let worker = Arc::try_unwrap(self.worker.take().unwrap()).expect("last arc");
-            worker.0.send(()).ok();
+            let _ = worker.0.send(());
         }
     }
 }
@@ -670,7 +670,7 @@ pub struct LoaderContext {
 }
 
 impl LoaderContext {
-    pub fn from_path(id: ContextId, closer: mpsc::Sender<ContextId>, path: Path) -> Self {
+    pub fn from_path(id: ContextId, closer: async_channel::Sender<ContextId>, path: Path) -> Self {
         trace!("new loader context: {:?}", id);
         LoaderContext {
             id,
@@ -691,7 +691,7 @@ impl Drop for LoaderContext {
                 .try_lock()
                 .expect("last reference, no lock")
                 .closer
-                .try_send(self.id)
+                .send_blocking(self.id)
             {
                 warn!(
                     "failed to send session stop for session {}: {:?}",
@@ -727,7 +727,7 @@ impl From<ContextId> for u64 {
 struct InnerLoaderContext {
     #[allow(dead_code)]
     path: Path,
-    closer: mpsc::Sender<ContextId>,
+    closer: async_channel::Sender<ContextId>,
 }
 
 #[async_trait]
@@ -841,7 +841,7 @@ impl ContentLoader for Client {
 impl<T: ContentLoader> Resolver<T> {
     pub fn new(loader: T) -> Self {
         let (closer_s, mut closer_r) = oneshot::channel();
-        let (session_closer_s, mut session_closer_r) = mpsc::channel(64);
+        let (session_closer_s, session_closer_r) = async_channel::bounded(128);
 
         let loader_thread = loader.clone();
         let worker = tokio::task::spawn(async move {
@@ -851,18 +851,18 @@ impl<T: ContentLoader> Resolver<T> {
                     biased;
                     session = session_closer_r.recv() => {
                         match session {
-                            Some(session) => {
+                            Ok(session) => {
                                 let loader = loader_thread.clone();
                                 // Spawn to make sure the channel has always capacity.
-                                tokio::task::spawn(async move {
-                                    debug!("stopping session {}", session);
-                                    if let Err(err) = loader.stop_session(session).await {
-                                        warn!("failed to stop session {}: {:?}", session, err);
-                                    }
-                                });
+                                error!("stopping session {}", session);
+                                if let Err(err) = loader.stop_session(session).await {
+                                    warn!("failed to stop session {}: {:?}", session, err);
+                                }
+                                error!("stopping session {} done", session);
+
                             }
-                            None => {
-                                warn!("session_closer channel broke");
+                            Err(err) => {
+                                warn!("session_closer channel broke: {:?}", err);
                                 break;
                             }
                         }
