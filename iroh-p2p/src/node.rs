@@ -314,31 +314,25 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
 
             let entry = self.bitswap_sessions.entry(ctx).or_default();
             let worker = tokio::task::spawn(async move {
-                let block_receiver = client.get_block_with_session_id(ctx, &cid);
-
                 tokio::select! {
-                    biased;
-
                     _ = closer_r => {
                         // Explicit sesssion stop.
                         debug!("session {}: stopped: closed", ctx);
                     }
                     _ = chan.closed() => {
-                        debug!("session {}: stopped: request canceled", ctx);
                         // RPC dropped
+                        debug!("session {}: stopped: request canceled", ctx);
                     }
-                    block = block_receiver => {
-                        match block {
-                            Ok(block) => {
-                                if let Err(e) = chan.send(Ok(block)) {
-                                    warn!("failed to send block response: {:?}", e);
-                                }
-                            }
-                            Err(err) => {
-                                chan.send(Err(err.to_string())).ok();
+                    block = client.get_block_with_session_id(ctx, &cid) => match block {
+                        Ok(block) => {
+                            if let Err(e) = chan.send(Ok(block)) {
+                                warn!("failed to send block response: {:?}", e);
                             }
                         }
-                    }
+                        Err(err) => {
+                            chan.send(Err(err.to_string())).ok();
+                        }
+                    },
                 }
             });
             entry.push((closer_s, worker));
