@@ -1,10 +1,6 @@
-use std::sync::Arc;
-use std::sync::atomic::AtomicUsize;
-
 use anyhow::{anyhow, Context, Result};
 #[cfg(feature = "grpc")]
 use futures::{Stream, StreamExt};
-use rand::Rng;
 
 use crate::config::Config;
 use crate::gateway::GatewayClient;
@@ -96,9 +92,9 @@ impl Client {
         })
     }
 
-    pub fn try_p2p(self) -> Result<P2pClient> {
-        let c = self.p2p.unwrap().clone().get();
-        return Ok(c);
+    pub fn try_p2p(&self) -> Result<P2pClient> {
+        let c = self.p2p.clone().unwrap().get();
+        return Ok(c.clone());
     }
 
     pub fn try_gateway(&self) -> Result<&GatewayClient> {
@@ -107,9 +103,9 @@ impl Client {
             .ok_or_else(|| anyhow!("missing rpc gateway connnection"))
     }
 
-    pub fn try_store(self) -> Result<StoreClient> {
-        let c = self.store.unwrap().clone().get();
-        return Ok(c);
+    pub fn try_store(&self) -> Result<StoreClient> {
+        let c = self.store.clone().unwrap().get();
+        return Ok(c.clone());
     }
 
     #[cfg(feature = "grpc")]

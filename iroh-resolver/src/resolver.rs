@@ -808,7 +808,7 @@ impl ContentLoader for Client {
             let len = clone.len();
             let links_len = links.len();
             if let Some(store_rpc) = store.as_ref() {
-                match store_rpc.put(cid, clone.clone(), links).await {
+                match store_rpc.clone().get().put(cid, clone.clone(), links).await {
                     Ok(_) => {
                         debug!("stored {} ({}bytes, {}links)", cid, len, links_len);
 
