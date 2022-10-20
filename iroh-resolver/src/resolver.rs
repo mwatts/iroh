@@ -685,7 +685,9 @@ impl LoaderContext {
 
 impl Drop for LoaderContext {
     fn drop(&mut self) {
-        if Arc::strong_count(&self.inner) == 1 {
+        let count = Arc::strong_count(&self.inner);
+        debug!("session {} dropping loader context {}", self.id, count);
+        if count == 1 {
             if let Err(err) = self
                 .inner
                 .try_lock()
@@ -852,9 +854,8 @@ impl<T: ContentLoader> Resolver<T> {
                     session = session_closer_r.recv() => {
                         match session {
                             Ok(session) => {
-                                let loader = loader_thread.clone();
-                                // Spawn to make sure the channel has always capacity.
                                 error!("stopping session {}", session);
+                                let loader = loader_thread.clone();
                                 if let Err(err) = loader.stop_session(session).await {
                                     warn!("failed to stop session {}: {:?}", session, err);
                                 }
