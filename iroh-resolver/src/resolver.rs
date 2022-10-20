@@ -854,13 +854,15 @@ impl<T: ContentLoader> Resolver<T> {
                     session = session_closer_r.recv() => {
                         match session {
                             Ok(session) => {
-                                error!("stopping session {}", session);
                                 let loader = loader_thread.clone();
-                                if let Err(err) = loader.stop_session(session).await {
-                                    warn!("failed to stop session {}: {:?}", session, err);
-                                }
-                                error!("stopping session {} done", session);
 
+                                tokio::task::spawn(async move {
+                                    error!("stopping session {}", session);
+                                    if let Err(err) = loader.stop_session(session).await {
+                                        warn!("failed to stop session {}: {:?}", session, err);
+                                    }
+                                    error!("stopping session {} done", session);
+                                });
                             }
                             Err(err) => {
                                 warn!("session_closer channel broke: {:?}", err);
