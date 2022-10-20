@@ -174,7 +174,7 @@ impl SessionManager {
 
     pub async fn remove_session(&self, session_id: u64) -> Result<()> {
         debug!(
-            "removing session {} ({} sessions)",
+            "stopping session {} ({} sessions)",
             session_id,
             self.inner.sessions.read().await.len()
         );
@@ -185,7 +185,7 @@ impl SessionManager {
             .await;
         self.cancel_wants(&cancels).await;
         self.inner.sessions.write().await.remove(&session_id);
-
+        debug!("stopping session {} done", session_id);
         Ok(())
     }
 
