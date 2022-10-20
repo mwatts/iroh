@@ -279,8 +279,8 @@ impl<KeyStorage: Storage> Node<KeyStorage> {
 
     fn destroy_session(&mut self, ctx: u64, response_channel: oneshot::Sender<Result<()>>) {
         if let Some(bs) = self.swarm.behaviour().bitswap.as_ref() {
-            let client = bs.client().clone();
             if let Some(workers) = self.bitswap_sessions.remove(&ctx) {
+                let client = bs.client().clone();
                 tokio::task::spawn(async move {
                     debug!("stopping session {} ({} workers)", ctx, workers.len());
                     // first shutdown workers

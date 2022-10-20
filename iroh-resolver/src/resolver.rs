@@ -843,7 +843,7 @@ impl ContentLoader for Client {
 impl<T: ContentLoader> Resolver<T> {
     pub fn new(loader: T) -> Self {
         let (closer_s, mut closer_r) = oneshot::channel();
-        let (session_closer_s, session_closer_r) = async_channel::bounded(128);
+        let (session_closer_s, session_closer_r) = async_channel::bounded(2048);
 
         let loader_thread = loader.clone();
         let worker = tokio::task::spawn(async move {
