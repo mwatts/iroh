@@ -1,4 +1,4 @@
-use crate::{gateway, network, store};
+use crate::{gateway, network, one, store};
 use anyhow::Result;
 use async_stream::stream;
 use futures::Stream;
@@ -161,6 +161,7 @@ impl Default for StatusRow {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StatusTable {
+    pub one: StatusRow,
     pub gateway: StatusRow,
     pub p2p: StatusRow,
     pub store: StatusRow,
@@ -168,11 +169,13 @@ pub struct StatusTable {
 
 impl StatusTable {
     pub fn new(
+        one: Option<StatusRow>,
         gateway: Option<StatusRow>,
         p2p: Option<StatusRow>,
         store: Option<StatusRow>,
     ) -> Self {
         Self {
+            one: one.unwrap_or_default(),
             gateway: gateway.unwrap_or_default(),
             p2p: p2p.unwrap_or_default(),
             store: store.unwrap_or_default(),
@@ -187,6 +190,10 @@ impl StatusTable {
     }
 
     pub fn update(&mut self, s: StatusRow) -> Result<()> {
+        if self.one.name() == s.name() {
+            self.one = s;
+            return Ok(());
+        }
         if self.gateway.name() == s.name() {
             self.gateway = s;
             return Ok(());
@@ -213,9 +220,10 @@ impl Iterator for StatusTableIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = match self.iter {
-            0 => Some(self.table.store.to_owned()),
-            1 => Some(self.table.p2p.to_owned()),
-            2 => Some(self.table.gateway.to_owned()),
+            0 => Some(self.table.one.to_owned()),
+            1 => Some(self.table.store.to_owned()),
+            2 => Some(self.table.p2p.to_owned()),
+            3 => Some(self.table.gateway.to_owned()),
             _ => None,
         };
 
@@ -227,6 +235,7 @@ impl Iterator for StatusTableIterator<'_> {
 impl Default for StatusTable {
     fn default() -> Self {
         Self {
+            one: StatusRow::new(one::NAME, 1, ServiceStatus::Unknown),
             gateway: StatusRow::new(gateway::NAME, 1, ServiceStatus::Unknown),
             p2p: StatusRow::new(network::NAME, 1, ServiceStatus::Unknown),
             store: StatusRow::new(store::NAME, 1, ServiceStatus::Unknown),
@@ -264,6 +273,11 @@ mod tests {
     #[test]
     fn status_table_default() {
         let expect = StatusTable {
+            one: StatusRow {
+                name: crate::one::NAME,
+                number: 1,
+                status: ServiceStatus::Unknown,
+            },
             gateway: StatusRow {
                 name: crate::gateway::NAME,
                 number: 1,
@@ -287,6 +301,11 @@ mod tests {
     #[test]
     fn status_table_new() {
         let expect = StatusTable {
+            one: StatusRow {
+                name: "test",
+                number: 1,
+                status: ServiceStatus::Unknown,
+            },
             gateway: StatusRow {
                 name: "test",
                 number: 1,
@@ -308,6 +327,7 @@ mod tests {
             StatusTable::new(
                 Some(StatusRow::new("test", 1, ServiceStatus::Unknown)),
                 Some(StatusRow::new("test", 1, ServiceStatus::Unknown)),
+                Some(StatusRow::new("test", 1, ServiceStatus::Unknown)),
                 Some(StatusRow::new("test", 1, ServiceStatus::Unknown))
             )
         );
@@ -315,24 +335,30 @@ mod tests {
 
     #[test]
     fn status_table_update() {
+        let mut one = Some(StatusRow::new(one::NAME, 1, ServiceStatus::Unknown));
         let mut gateway = Some(StatusRow::new(gateway::NAME, 1, ServiceStatus::Unknown));
         let mut p2p = Some(StatusRow::new(network::NAME, 1, ServiceStatus::Unknown));
         let mut store = Some(StatusRow::new(store::NAME, 1, ServiceStatus::Unknown));
-        let mut got = StatusTable::new(gateway.clone(), p2p.clone(), store.clone());
+        let mut got = StatusTable::new(one.clone(), gateway.clone(), p2p.clone(), store.clone());
+
+        one.as_mut().unwrap().status = ServiceStatus::Serving;
+        let expect = StatusTable::new(one.clone(), gateway.clone(), p2p.clone(), store.clone());
+        got.update(one.clone().unwrap()).unwrap();
+        assert_eq!(expect, got);
 
         store.as_mut().unwrap().status = ServiceStatus::Serving;
-        let expect = StatusTable::new(gateway.clone(), p2p.clone(), store.clone());
+        let expect = StatusTable::new(one.clone(), gateway.clone(), p2p.clone(), store.clone());
         got.update(store.clone().unwrap()).unwrap();
         assert_eq!(expect, got);
 
         gateway.as_mut().unwrap().status = ServiceStatus::ServiceUnknown;
-        let expect = StatusTable::new(gateway.clone(), p2p.clone(), store.clone());
+        let expect = StatusTable::new(one.clone(), gateway.clone(), p2p.clone(), store.clone());
         got.update(gateway.clone().unwrap()).unwrap();
         assert_eq!(expect, got);
 
         p2p.as_mut().unwrap().status =
             ServiceStatus::Down(tonic::Status::new(tonic::Code::Unavailable, ""));
-        let expect = StatusTable::new(gateway, p2p.clone(), store);
+        let expect = StatusTable::new(one.clone(), gateway, p2p.clone(), store);
         got.update(p2p.unwrap()).unwrap();
         assert_eq!(expect, got);
     }
@@ -343,6 +369,11 @@ mod tests {
         let rows: Vec<StatusRow> = table.iter().collect();
         assert_eq!(
             vec![
+                StatusRow {
+                    name: crate::one::NAME,
+                    number: 1,
+                    status: ServiceStatus::Unknown,
+                },
                 StatusRow {
                     name: crate::store::NAME,
                     number: 1,

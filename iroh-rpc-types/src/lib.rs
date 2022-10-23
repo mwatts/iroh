@@ -2,6 +2,7 @@
 mod macros;
 
 pub mod gateway;
+pub mod one;
 pub mod p2p;
 pub mod store;
 

@@ -5,10 +5,12 @@ use futures::{Stream, StreamExt};
 use crate::config::Config;
 use crate::gateway::GatewayClient;
 use crate::network::P2pClient;
+use crate::one::OneClient;
 use crate::store::StoreClient;
 
 #[derive(Debug, Clone)]
 pub struct Client {
+    pub one: Option<OneClient>,
     pub gateway: Option<GatewayClient>,
     pub p2p: Option<P2pClient>,
     pub store: Option<StoreClient>,
@@ -17,11 +19,21 @@ pub struct Client {
 impl Client {
     pub async fn new(cfg: Config) -> Result<Self> {
         let Config {
+            one_addr,
             gateway_addr,
             p2p_addr,
             store_addr,
         } = cfg;
 
+        let one = if let Some(addr) = one_addr {
+            Some(
+                OneClient::new(addr)
+                    .await
+                    .context("Could not create one rpc client")?,
+            )
+        } else {
+            None
+        };
         let gateway = if let Some(addr) = gateway_addr {
             Some(
                 GatewayClient::new(addr)
@@ -52,10 +64,17 @@ impl Client {
         };
 
         Ok(Client {
+            one,
             gateway,
             p2p,
             store,
         })
+    }
+
+    pub fn try_one(&self) -> Result<&OneClient> {
+        self.one
+            .as_ref()
+            .ok_or_else(|| anyhow!("missing rpc one connection"))
     }
 
     pub fn try_p2p(&self) -> Result<&P2pClient> {
@@ -78,6 +97,11 @@ impl Client {
 
     #[cfg(feature = "grpc")]
     pub async fn check(&self) -> crate::status::StatusTable {
+        let o = if let Some(ref o) = self.one {
+            Some(o.check().await)
+        } else {
+            None
+        };
         let g = if let Some(ref g) = self.gateway {
             Some(g.check().await)
         } else {
@@ -93,7 +117,7 @@ impl Client {
         } else {
             None
         };
-        crate::status::StatusTable::new(g, p, s)
+        crate::status::StatusTable::new(o, g, p, s)
     }
 
     #[cfg(feature = "grpc")]
@@ -102,6 +126,10 @@ impl Client {
             let mut status_table: crate::status::StatusTable = Default::default();
             let mut streams = Vec::new();
 
+            if let Some(ref o) = self.one {
+                let o = o.watch().await;
+                streams.push(o.boxed());
+            }
             if let Some(ref g) = self.gateway {
                 let g = g.watch().await;
                 streams.push(g.boxed());
@@ -138,7 +166,7 @@ mod tests {
     };
 
     use crate::status::{ServiceStatus, StatusRow, StatusTable};
-    use crate::{gateway, network, store};
+    use crate::{gateway, network, one, store};
 
     struct TestService {}
     #[tonic::async_trait]
@@ -171,11 +199,18 @@ mod tests {
     async fn client_status() {
         let cfg = Config::default_grpc();
 
+        let one_name = one::NAME;
         let gateway_name = gateway::NAME;
         let p2p_name = network::NAME;
         let store_name = store::NAME;
 
         // make the services with the expected service names
+        let (mut one_reporter, one_task) = make_service(
+            one::SERVICE_NAME,
+            cfg.one_addr.as_ref().unwrap().try_as_socket_addr().unwrap(),
+        )
+        .await
+        .unwrap();
         let (mut gateway_reporter, gateway_task) = make_service(
             gateway::SERVICE_NAME,
             cfg.gateway_addr
@@ -207,6 +242,7 @@ mod tests {
         // test `check`
         // expect the names to be the hard-coded display names
         let mut expect = StatusTable::new(
+            Some(StatusRow::new(one_name, 1, ServiceStatus::Serving)),
             Some(StatusRow::new(gateway_name, 1, ServiceStatus::Serving)),
             Some(StatusRow::new(p2p_name, 1, ServiceStatus::Serving)),
             Some(StatusRow::new(store_name, 1, ServiceStatus::Serving)),
@@ -223,6 +259,16 @@ mod tests {
         stream.next().await.unwrap();
         got = stream.next().await.unwrap();
 
+        assert_eq!(expect, got);
+
+        // update one
+        expect
+            .update(StatusRow::new(one_name, 1, ServiceStatus::Unknown))
+            .unwrap();
+        one_reporter
+            .set_service_status(one::SERVICE_NAME, ServingStatus::Unknown)
+            .await;
+        let got = stream.next().await.unwrap();
         assert_eq!(expect, got);
 
         // update gateway
@@ -255,6 +301,7 @@ mod tests {
         let got = stream.next().await.unwrap();
         assert_eq!(expect, got);
 
+        one_task.abort();
         gateway_task.abort();
         p2p_task.abort();
         store_task.abort();

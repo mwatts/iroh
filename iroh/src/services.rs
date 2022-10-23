@@ -15,8 +15,18 @@ const SERVICE_START_TIMEOUT_SECONDS: u64 = 15;
 
 /// start any of {iroh-gateway,iroh-store,iroh-p2p} that aren't currently
 /// running.
-pub async fn start(api: &impl Api) -> Result<()> {
-    start_services(api, HashSet::from(["store", "p2p", "gateway"])).await
+pub async fn start(api: &impl Api, services: &Vec<String>) -> Result<()> {
+    let services = match services.is_empty() {
+        true => HashSet::from(["one"]),
+        false => {
+            let mut hs: HashSet<&str> = HashSet::new();
+            for s in services {
+                hs.insert(s.as_str());
+            }
+            hs
+        }
+    };
+    start_services(api, services).await
 }
 
 // TODO(b5) - should check for configuration mismatch between iroh CLI configuration
@@ -98,8 +108,18 @@ async fn start_services(api: &impl Api, services: HashSet<&str>) -> Result<()> {
 
 /// stop the default set of services by sending SIGINT to any active daemons
 /// identified by lockfiles
-pub async fn stop(api: &impl Api) -> Result<()> {
-    stop_services(api, HashSet::from(["gateway", "p2p", "store"])).await
+pub async fn stop(api: &impl Api, services: &Vec<String>) -> Result<()> {
+    let services = match services.is_empty() {
+        true => HashSet::from(["one"]),
+        false => {
+            let mut hs: HashSet<&str> = HashSet::new();
+            for s in services {
+                hs.insert(s.as_str());
+            }
+            hs
+        }
+    };
+    stop_services(api, services).await
 }
 
 pub async fn stop_services(api: &impl Api, services: HashSet<&str>) -> Result<()> {
@@ -189,6 +209,7 @@ where
     w.queue(style::PrintStyledContent(
         "Process\t\t\tNumber\tStatus\n".bold(),
     ))?;
+    queue_row(&table.one, &mut w)?;
     queue_row(&table.gateway, &mut w)?;
     queue_row(&table.p2p, &mut w)?;
     queue_row(&table.store, &mut w)?;

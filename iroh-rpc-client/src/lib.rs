@@ -5,6 +5,7 @@ mod client;
 mod config;
 mod gateway;
 mod network;
+mod one;
 #[cfg(feature = "grpc")]
 mod status;
 mod store;

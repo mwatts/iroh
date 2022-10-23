@@ -1,11 +1,11 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use axum::http::header::*;
 use config::{ConfigError, Map, Source, Value};
 
 use iroh_metrics::config::Config as MetricsConfig;
 use iroh_p2p::Libp2pConfig;
 use iroh_rpc_client::Config as RpcClientConfig;
-use iroh_rpc_types::Addr;
+use iroh_rpc_types::{one::OneServerAddr, Addr};
 use iroh_store::config::config_data_path;
 use iroh_util::insert_into_config_map;
 use serde::{Deserialize, Serialize};
@@ -70,10 +70,31 @@ impl Config {
         let path: PathBuf = TempDir::new().unwrap().path().join("iroh/ipfsd.http");
 
         RpcClientConfig {
+            one_addr: Some("grpc://0.0.0.0:4399".parse().unwrap()),
             gateway_addr: Some(Addr::GrpcUds(path)),
             p2p_addr: None,
             store_addr: None,
         }
+    }
+
+    /// Derive server addr for non memory addrs.
+    pub fn server_rpc_addr(&self) -> Result<Option<OneServerAddr>> {
+        self.rpc_client
+            .one_addr
+            .as_ref()
+            .map(|addr| {
+                #[allow(unreachable_patterns)]
+                match addr {
+                    #[cfg(feature = "rpc-grpc")]
+                    Addr::GrpcHttp2(addr) => Ok(Addr::GrpcHttp2(*addr)),
+                    #[cfg(all(feature = "rpc-grpc", unix))]
+                    Addr::GrpcUds(path) => Ok(Addr::GrpcUds(path.clone())),
+                    #[cfg(feature = "rpc-mem")]
+                    Addr::Mem(_) => bail!("can not derive rpc_addr for mem addr"),
+                    _ => bail!("invalid rpc_addr"),
+                }
+            })
+            .transpose()
     }
 
     // synchronize the top level configs across subsystems
@@ -128,6 +149,7 @@ fn default_p2p_config(
     key_store_path: PathBuf,
 ) -> iroh_p2p::config::Config {
     iroh_p2p::config::Config {
+        enabled: true,
         libp2p: Libp2pConfig::default(),
         rpc_client: ipfsd,
         metrics,

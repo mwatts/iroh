@@ -67,6 +67,7 @@ pub struct Libp2pConfig {
 /// Configuration for the node.
 #[derive(PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
+    pub enabled: bool,
     pub libp2p: Libp2pConfig,
     pub rpc_client: RpcClientConfig,
     pub metrics: MetricsConfig,
@@ -182,6 +183,7 @@ impl Default for Libp2pConfig {
 impl Config {
     pub fn default_with_rpc(client_addr: P2pClientAddr) -> Self {
         Self {
+            enabled: true,
             libp2p: Libp2pConfig::default(),
             rpc_client: RpcClientConfig {
                 p2p_addr: Some(client_addr),
@@ -196,6 +198,7 @@ impl Config {
         let rpc_client = RpcClientConfig::default_grpc();
 
         Self {
+            enabled: true,
             libp2p: Libp2pConfig::default(),
             rpc_client,
             metrics: MetricsConfig::default(),

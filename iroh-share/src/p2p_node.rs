@@ -133,16 +133,19 @@ impl P2pNode {
         let (rpc_store_addr_server, rpc_store_addr_client) = Addr::new_mem();
 
         let rpc_store_client_config = iroh_rpc_client::Config {
+            one_addr: None,
             p2p_addr: Some(rpc_p2p_addr_client.clone()),
             store_addr: Some(rpc_store_addr_client.clone()),
             gateway_addr: None,
         };
         let rpc_p2p_client_config = iroh_rpc_client::Config {
+            one_addr: None,
             p2p_addr: Some(rpc_p2p_addr_client.clone()),
             store_addr: Some(rpc_store_addr_client.clone()),
             gateway_addr: None,
         };
         let config = config::Config {
+            enabled: true,
             libp2p: config::Libp2pConfig {
                 listening_multiaddr: format!("/ip4/0.0.0.0/tcp/{port}").parse().unwrap(),
                 mdns: false,

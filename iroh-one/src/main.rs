@@ -9,6 +9,8 @@ use iroh_one::uds;
 use iroh_one::{
     cli::Args,
     config::{Config, CONFIG_FILE_NAME, ENV_PREFIX},
+    rpc,
+    rpc::One,
 };
 use iroh_rpc_client::Client as RpcClient;
 use iroh_rpc_types::Addr;
@@ -17,6 +19,7 @@ use iroh_util::{iroh_config_path, make_config};
 #[cfg(feature = "uds-gateway")]
 use tempdir::TempDir;
 use tokio::sync::RwLock;
+use tokio::task::JoinHandle;
 use tracing::{debug, error};
 
 #[tokio::main(flavor = "multi_thread")]
@@ -53,9 +56,7 @@ async fn main() -> Result<()> {
         config.rpc_client.store_addr = Some(store_sender);
         let store_rpc = iroh_one::mem_store::start(store_recv, config.clone().store).await?;
 
-        let (p2p_recv, p2p_sender) = Addr::new_mem();
-        config.rpc_client.p2p_addr = Some(p2p_sender);
-        let p2p_rpc = iroh_one::mem_p2p::start(p2p_recv, config.clone().p2p).await?;
+        let p2p_rpc = maybe_start_p2p(&mut config).await;
         (store_rpc, p2p_rpc)
     };
 
@@ -70,6 +71,16 @@ async fn main() -> Result<()> {
         .gateway
         .server_rpc_addr()?
         .ok_or_else(|| anyhow!("missing gateway rpc addr"))?;
+
+    let rpc_addr = config
+        .server_rpc_addr()?
+        .ok_or_else(|| anyhow!("missing iroh one rpc addr"))?;
+
+    tokio::spawn(async move {
+        if let Err(err) = rpc::new(rpc_addr, One::default()).await {
+            tracing::error!("Failed to run gateway rpc handler: {}", err);
+        }
+    });
 
     let bad_bits = match config.gateway.denylist {
         true => Arc::new(Some(RwLock::new(BadBits::new()))),
@@ -124,11 +135,26 @@ async fn main() -> Result<()> {
     iroh_util::block_until_sigint().await;
 
     store_rpc.abort();
-    p2p_rpc.abort();
+    if let Some(p2p) = p2p_rpc {
+        p2p.abort();
+    }
     #[cfg(feature = "uds-gateway")]
     uds_server_task.abort();
     core_task.abort();
 
     metrics_handle.shutdown();
     Ok(())
+}
+
+async fn maybe_start_p2p(config: &mut Config) -> Option<JoinHandle<()>> {
+    if config.p2p.enabled {
+        println!("warning: p2p is enabled. This is experimental.");
+        let (p2p_recv, p2p_sender) = Addr::new_mem();
+        config.rpc_client.p2p_addr = Some(p2p_sender);
+        let p2p_rpc = iroh_one::mem_p2p::start(p2p_recv, config.clone().p2p)
+            .await
+            .unwrap();
+        return Some(p2p_rpc);
+    }
+    None
 }

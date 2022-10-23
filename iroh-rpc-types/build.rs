@@ -9,6 +9,7 @@ fn main() {
     ]);
 
     let source_files = [
+        "proto/one.proto",
         "proto/p2p.proto",
         "proto/store.proto",
         "proto/gateway.proto",

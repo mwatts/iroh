@@ -1,11 +1,14 @@
 use config::{ConfigError, Map, Source, Value};
-use iroh_rpc_types::{gateway::GatewayClientAddr, p2p::P2pClientAddr, store::StoreClientAddr};
+use iroh_rpc_types::{
+    gateway::GatewayClientAddr, one::OneClientAddr, p2p::P2pClientAddr, store::StoreClientAddr,
+};
 use iroh_util::insert_into_config_map;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 // Config for the rpc Client
 pub struct Config {
+    pub one_addr: Option<OneClientAddr>,
     // gateway rpc address
     pub gateway_addr: Option<GatewayClientAddr>,
     // p2p rpc address
@@ -21,6 +24,9 @@ impl Source for Config {
 
     fn collect(&self) -> Result<Map<String, Value>, ConfigError> {
         let mut map: Map<String, Value> = Map::new();
+        if let Some(addr) = &self.one_addr {
+            insert_into_config_map(&mut map, "one_addr", addr.to_string());
+        }
         if let Some(addr) = &self.gateway_addr {
             insert_into_config_map(&mut map, "gateway_addr", addr.to_string());
         }
@@ -37,6 +43,7 @@ impl Source for Config {
 impl Config {
     pub fn default_grpc() -> Self {
         Self {
+            one_addr: Some("grpc://0.0.0.0:4399".parse().unwrap()),
             gateway_addr: Some("grpc://0.0.0.0:4400".parse().unwrap()),
             p2p_addr: Some("grpc://0.0.0.0:4401".parse().unwrap()),
             store_addr: Some("grpc://0.0.0.0:4402".parse().unwrap()),
@@ -53,6 +60,10 @@ mod tests {
     fn test_collect() {
         let default = Config::default_grpc();
         let mut expect: Map<String, Value> = Map::new();
+        expect.insert(
+            "one_addr".to_string(),
+            Value::new(None, default.one_addr.unwrap().to_string()),
+        );
         expect.insert(
             "gateway_addr".to_string(),
             Value::new(None, default.gateway_addr.unwrap().to_string()),
