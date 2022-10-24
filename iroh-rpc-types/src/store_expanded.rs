@@ -153,6 +153,7 @@ impl ::core::clone::Clone for StoreClientBackend {
 pub enum StoreRequest {
     version(()),
     put(PutRequest),
+    put_many(tonic::Streaming<PutRequest>),
     get(GetRequest),
     has(HasRequest),
     get_links(GetLinksRequest),
@@ -198,6 +199,21 @@ pub trait Store: Send + Sync + 'static {
     where
         'life0: 'async_trait,
         Self: 'async_trait;
+        #[must_use]
+        #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
+        fn put_many<'life0, 'async_trait>(
+            &'life0 self,
+            request: tonic::Streaming<PutRequest>,
+        ) -> ::core::pin::Pin<
+            Box<
+                dyn ::core::future::Future<Output = anyhow::Result<()>>
+                    + ::core::marker::Send
+                    + 'async_trait,
+            >,
+        >
+        where
+            'life0: 'async_trait,
+            Self: 'async_trait;
     #[must_use]
     #[allow(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     fn get<'life0, 'async_trait>(
@@ -384,6 +400,76 @@ impl Store for StoreClientBackend {
                     Self::Mem(s) => {
                         let (s_res, r_res) = tokio::sync::oneshot::channel();
                         s.send((StoreRequest::put(req), s_res)).await.map_err(|_| {
+                            ::anyhow::__private::must_use({
+                                let error = ::anyhow::__private::format_err(
+                                    ::core::fmt::Arguments::new_v1(&["send failed"], &[]),
+                                );
+                                error
+                            })
+                        })?;
+                        let res = r_res.await?;
+                        #[allow(irrefutable_let_patterns)]
+                        if let StoreResponse::put(res) = res {
+                            return res.map_err(|e| {
+                                ::anyhow::__private::must_use({
+                                    use ::anyhow::__private::kind::*;
+                                    let error = match e {
+                                        error => (&error).anyhow_kind().new(error),
+                                    };
+                                    error
+                                })
+                            });
+                        } else {
+                            return ::anyhow::__private::Err({
+                                let error = ::anyhow::__private::format_err(
+                                    ::core::fmt::Arguments::new_v1(&["invalid response"], &[]),
+                                );
+                                error
+                            });
+                        }
+                    }
+                }
+            };
+            #[allow(unreachable_code)]
+            __ret
+        })
+    }
+    fn put_many<'life0, 'async_trait>(
+        &'life0 self,
+        req: tonic::Streaming<PutRequest>,
+    ) -> ::core::pin::Pin<
+        Box<
+            dyn ::core::future::Future<Output = anyhow::Result<()>>
+                + ::core::marker::Send
+                + 'async_trait,
+        >,
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
+        Box::pin(async move {
+            if let ::core::option::Option::Some(__ret) =
+                ::core::option::Option::None::<anyhow::Result<()>>
+            {
+                return __ret;
+            }
+            let __self = self;
+            let req = req;
+            let __ret: anyhow::Result<()> = {
+                match __self {
+                    #[cfg(feature = "grpc")]
+                    Self::Grpc { client, .. } => {
+                        let req = iroh_metrics::req::trace_tonic_req(req);
+                        let mut c = client.clone();
+                        let res = store_client::StoreClient::put_many(&mut c, req).await?;
+                        let res = res.into_inner();
+                        Ok(res)
+                    }
+                    #[cfg(feature = "mem")]
+                    Self::Mem(s) => {
+                        let (s_res, r_res) = tokio::sync::oneshot::channel();
+                        s.send((StoreRequest::put_many(req), s_res)).await.map_err(|_| {
                             ::anyhow::__private::must_use({
                                 let error = ::anyhow::__private::format_err(
                                     ::core::fmt::Arguments::new_v1(&["send failed"], &[]),
@@ -825,7 +911,7 @@ mod grpc {
 
         fn put_many<'life0, 'async_trait>(
             &'life0 self,
-            req: Request<PutRequest>,
+            req: Request<tonic::Streaming<PutRequest>>,
         ) -> ::core::pin::Pin<
             Box<
                 dyn ::core::future::Future<Output = Result<Response<()>, Status>>
@@ -847,7 +933,7 @@ mod grpc {
                 let req = req;
                 let __ret: Result<Response<()>, Status> = {
                     let req = req.into_inner();
-                    let res = Store::put(__self, req)
+                    let res = Store::put_many(__self, req)
                         .await
                         .map_err(|err| Status::internal(err.to_string()))?;
                     Ok(Response::new(res))
