@@ -1,4 +1,4 @@
-include_proto!("store");
+pub use super::store_proto::*;
 
 proxy!(
     Store,

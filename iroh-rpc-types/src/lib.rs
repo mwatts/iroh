@@ -1,9 +1,14 @@
+#![feature(fmt_internals, fmt_helpers_for_derive)]
 #[macro_use]
 mod macros;
 
 pub mod gateway;
 pub mod p2p;
-pub mod store;
+mod store_proto;
+// pub mod store_proxy;
+// pub use store_proxy as store;
+pub mod store_expanded;
+pub use store_expanded as store;
 
 // Reexport for convenience.
 #[cfg(feature = "grpc")]
