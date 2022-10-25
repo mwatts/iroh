@@ -1,9 +1,9 @@
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc,
+        Arc, Mutex,
     },
-    thread::available_parallelism,
+    thread::available_parallelism, collections::BTreeMap,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -35,6 +35,7 @@ struct InnerStore {
     next_id: AtomicU64,
     put_count: AtomicU64,
     get_count: AtomicU64,
+    map: Mutex<BTreeMap<Cid, (Cid, Vec<u8>, Vec<Cid>)>>,
     _cache: Cache,
     _rpc_client: RpcClient,
 }
@@ -137,6 +138,7 @@ impl Store {
                 _rpc_client,
                 put_count: Default::default(),
                 get_count: Default::default(),
+                map: Default::default(),
             }),
         })
     }
@@ -191,6 +193,7 @@ impl Store {
                 _rpc_client,
                 put_count: Default::default(),
                 get_count: Default::default(),
+                map: Default::default(),
             }),
         })
     }
@@ -221,7 +224,9 @@ impl Store {
         let metadata_bytes = rkyv::to_bytes::<_, 1024>(&metadata)?; // TODO: is this the right amount of scratch space?
         let id_key = id_key(&cid);
 
-        let children = self.ensure_id_many(links.into_iter()).await?;
+        let links = links.into_iter().collect::<Vec<_>>();
+
+        let children = self.ensure_id_many(links.clone()).await?;
 
         let graph = GraphV0 { children };
         let graph_bytes = rkyv::to_bytes::<_, 1024>(&graph)?; // TODO: is this the right amount of scratch space?
@@ -232,18 +237,23 @@ impl Store {
         let cf_blobs = self.cf_blobs()?;
         let blob_size = blob.as_ref().len();
 
+        let blob = blob.as_ref().to_vec();
+
         let mut batch = WriteBatch::default();
         batch.put_cf(cf_id, id_key, &id_bytes);
-        batch.put_cf(cf_blobs, &id_bytes, blob);
+        batch.put_cf(cf_blobs, &id_bytes, blob.clone());
         batch.put_cf(cf_meta, &id_bytes, metadata_bytes);
         batch.put_cf(cf_graph, &id_bytes, graph_bytes);
+        println!("put_cf {} {} bytes", hex::encode(id_bytes), blob.len());
         self.db().write(batch)?;
         observe!(StoreHistograms::PutRequests, start.elapsed().as_secs_f64());
         record!(StoreMetrics::PutBytes, blob_size as u64);
+        self.inner.map.lock().unwrap().insert(cid, (cid, blob, links.clone()));
         println!(
-            "Put {} {}",
+            "Put {} {} {}",
             cid,
-            self.inner.put_count.fetch_add(1, Ordering::Relaxed) + 1
+            self.inner.put_count.fetch_add(1, Ordering::Relaxed) + 1,
+            links.len(),
         );
         Ok(())
     }
@@ -289,6 +299,8 @@ impl Store {
         let res = match self.get_id(cid).await? {
             Some(id) => {
                 let maybe_blob = self.get_by_id(id).await?;
+                println!("got id {}", id);
+                println!("data for id {}", maybe_blob.is_some());
                 inc!(StoreMetrics::StoreHit);
                 record!(
                     StoreMetrics::GetBytes,
@@ -308,6 +320,11 @@ impl Store {
             self.inner.get_count.fetch_add(1, Ordering::Relaxed) + 1,
             res.is_some()
         );
+        if res.is_none() {
+            if let Some((c, d, l)) = self.inner.map.lock().unwrap().get(&cid) {
+                println!("got some data in my map! {} {} {}", c, d.len(), l.len());
+            }
+        }
         Ok(res)
     }
 
