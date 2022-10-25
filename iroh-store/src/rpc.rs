@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use bytes::BytesMut;
 use cid::Cid;
+use futures::StreamExt;
 use iroh_rpc_types::store::{
     GetLinksRequest, GetLinksResponse, GetRequest, GetResponse, GetSizeRequest, GetSizeResponse,
     HasRequest, HasResponse, PutRequest, Store as RpcStore, StoreServerAddr, VersionResponse,
@@ -33,6 +34,18 @@ impl RpcStore for Store {
 
         info!("store rpc call: put cid {}", cid);
         Ok(res)
+    }
+
+    #[tracing::instrument(skip(self, req))]
+    async fn put_many(&self, req: tonic::Streaming<PutRequest>) -> Result<()> {
+        tokio::pin!(req);
+        while let Some(req) = req.next().await {
+            let req = req?;
+            let cid = cid_from_bytes(req.cid)?;
+            let links = links_from_bytes(req.links)?;
+            self.put(cid, req.blob, links).await?;
+        }
+        Ok(())
     }
 
     #[tracing::instrument(skip(self))]

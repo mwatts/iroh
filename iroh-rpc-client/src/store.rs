@@ -11,6 +11,7 @@ use iroh_rpc_types::store::{
     GetLinksRequest, GetRequest, GetSizeRequest, HasRequest, PutRequest, Store, StoreClientAddr,
     StoreClientBackend,
 };
+use futures::stream::StreamExt;
 use iroh_rpc_types::Addr;
 #[cfg(feature = "grpc")]
 use tonic::transport::Endpoint;
@@ -39,6 +40,21 @@ impl StoreClient {
         self.backend.put(req).await?;
         Ok(())
     }
+
+    #[tracing::instrument(skip(self, items))]
+    pub async fn put_many(&self, items: impl Stream<Item = (Cid, Bytes, Vec<Cid>)> + Send + Sync + 'static) -> Result<()> {
+        let items = items.map(|(cid, blob, links)| {
+            let req = PutRequest {
+                cid: cid.to_bytes(),
+                blob,
+                links: links.iter().map(|l| l.to_bytes()).collect(),
+            };
+            Ok(req)
+        }).boxed();
+        self.backend.put_many(items).await?;
+        Ok(())
+    }
+
 
     #[tracing::instrument(skip(self))]
     pub async fn get(&self, cid: Cid) -> Result<Option<Bytes>> {

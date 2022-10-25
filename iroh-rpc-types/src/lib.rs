@@ -7,8 +7,8 @@ pub mod p2p;
 mod store_proto;
 // pub mod store_proxy;
 // pub use store_proxy as store;
-pub mod store_expanded;
-pub use store_expanded as store;
+pub mod store_proxy_expanded;
+pub use store_proxy_expanded as store;
 
 // Reexport for convenience.
 #[cfg(feature = "grpc")]
