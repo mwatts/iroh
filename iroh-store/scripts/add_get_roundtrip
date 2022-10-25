@@ -1,0 +1,10 @@
+#!/bin/bash
+head -c 100000000 /dev/urandom > random100m
+HASH=`cargo run -p iroh -- add --no-wrap random100m | tail -n 1`
+cargo run -p iroh -- get $HASH
+HASH=${HASH:6}
+H1=`shasum random100m`
+H2=`shasum $HASH`
+echo "$H1"
+echo "$H2"
+
