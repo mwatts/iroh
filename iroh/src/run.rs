@@ -263,6 +263,7 @@ async fn add(
     pb.finish_and_clear();
 
     let root = *cids.last().context("File processing failed")?;
+    let cid_count = cids.len();
 
     if provide {
         let pb = ProgressBar::new(cids.len().try_into().unwrap());
@@ -289,6 +290,7 @@ async fn add(
         pb.finish_and_clear();
     }
 
+    eprintln!("{}", cid_count);
     println!("/ipfs/{}", root);
 
     Ok(())

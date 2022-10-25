@@ -33,6 +33,8 @@ pub struct Store {
 struct InnerStore {
     content: RocksDb,
     next_id: AtomicU64,
+    put_count: AtomicU64,
+    get_count: AtomicU64,
     _cache: Cache,
     _rpc_client: RpcClient,
 }
@@ -133,6 +135,8 @@ impl Store {
                 next_id: 1.into(),
                 _cache: cache,
                 _rpc_client,
+                put_count: Default::default(),
+                get_count: Default::default(),
             }),
         })
     }
@@ -185,6 +189,8 @@ impl Store {
                 next_id: next_id.into(),
                 _cache: cache,
                 _rpc_client,
+                put_count: Default::default(),
+                get_count: Default::default(),
             }),
         })
     }
@@ -234,7 +240,11 @@ impl Store {
         self.db().write(batch)?;
         observe!(StoreHistograms::PutRequests, start.elapsed().as_secs_f64());
         record!(StoreMetrics::PutBytes, blob_size as u64);
-
+        println!(
+            "Put {} {}",
+            cid,
+            self.inner.put_count.fetch_add(1, Ordering::Relaxed) + 1
+        );
         Ok(())
     }
 
@@ -284,15 +294,21 @@ impl Store {
                     StoreMetrics::GetBytes,
                     maybe_blob.as_ref().map(|b| b.len()).unwrap_or(0) as u64
                 );
-                Ok(maybe_blob)
+                maybe_blob
             }
             None => {
                 inc!(StoreMetrics::StoreMiss);
-                Ok(None)
+                None
             }
         };
         observe!(StoreHistograms::GetRequests, start.elapsed().as_secs_f64());
-        res
+        println!(
+            "Get {} {} {}",
+            cid,
+            self.inner.get_count.fetch_add(1, Ordering::Relaxed) + 1,
+            res.is_some()
+        );
+        Ok(res)
     }
 
     #[tracing::instrument(skip(self))]
