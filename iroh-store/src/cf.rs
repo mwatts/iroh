@@ -1,6 +1,5 @@
 use bytecheck::CheckBytes;
 use iroh_mount::Drive;
-use cid::Cid;
 use rkyv::{with::AsBox, Archive, Deserialize, Serialize};
 
 /// Column family to store actual data.

@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use async_trait::async_trait;
 use bytes::BytesMut;
 use cid::Cid;
@@ -8,6 +8,7 @@ use iroh_rpc_types::store::{
     GetLinksRequest, GetLinksResponse, GetRequest, GetResponse, GetSizeRequest, GetSizeResponse,
     HasRequest, HasResponse, PutManyRequest, PutRequest, Store as RpcStore, StoreServerAddr,
     VersionResponse,
+    Mount as RpcMount, ListMountsRequest, ListMountsResponse,GetMountRequest, GetMountResponse
 };
 use tracing::info;
 
@@ -91,6 +92,49 @@ impl RpcStore for Store {
         } else {
             Ok(GetSizeResponse { size: None })
         }
+    }
+
+    async fn list_mounts(&self, _req: ListMountsRequest) -> Result<ListMountsResponse> {
+        let mounts = self.list_mounts()?
+            .iter()
+            .map(|d| {
+                RpcMount{
+                    name: d.name.clone(),
+                    cid: d.cid.to_bytes(),
+                    key: d.key.clone(),
+                    private_name: d.private_name.clone(),
+                }
+            })
+            .collect();
+        Ok(ListMountsResponse{ mounts })
+    }
+
+    async fn get_mount(&self, req: GetMountRequest) -> Result<GetMountResponse> {
+        let mount = self.get_mount(req.name.clone())
+            .map_err(|_| anyhow!("mount {:?} not found", req.name))?;
+        match mount {
+            Some(mount) => {
+                Ok(GetMountResponse{
+                    mount: Some(RpcMount{
+                        name: mount.name,
+                        cid: mount.cid.to_bytes(),
+                        key: mount.key,
+                        private_name: mount.private_name,
+                    })
+                })
+            },
+            None => Ok(GetMountResponse{ mount: None })
+        }
+    }
+
+    async fn put_mount(&self, req: RpcMount) -> Result<()> {
+        let cid = Cid::try_from(req.cid)?;
+        self.put_mount(iroh_mount::Drive { 
+            name: req.name,
+            cid,
+            key: req.key,
+            private_name: req.private_name,
+        })
     }
 }
 
