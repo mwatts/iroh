@@ -15,6 +15,7 @@ use iroh_metrics::{
     store::{StoreHistograms, StoreMetrics},
 };
 use iroh_rpc_client::Client as RpcClient;
+use iroh_mount::Drive;
 use multihash::Multihash;
 use rocksdb::{
     BlockBasedOptions, Cache, ColumnFamily, DBPinnableSlice, Direction, IteratorMode, Options,
@@ -23,7 +24,7 @@ use rocksdb::{
 use smallvec::SmallVec;
 use tokio::task;
 
-use crate::cf::{GraphV0, MetadataV0, CF_BLOBS_V0, CF_GRAPH_V0, CF_ID_V0, CF_METADATA_V0};
+use crate::cf::{GraphV0, MetadataV0, CF_BLOBS_V0, CF_GRAPH_V0, CF_ID_V0, CF_METADATA_V0, CF_MOUNTS_V0, MountV0};
 use crate::Config;
 
 #[derive(Clone)]
@@ -109,6 +110,10 @@ impl Store {
             }
             {
                 let opts = Options::default();
+                db.create_cf(CF_MOUNTS_V0, &opts)?;
+            }
+            {
+                let opts = Options::default();
                 db.create_cf(CF_METADATA_V0, &opts)?;
             }
             {
@@ -150,7 +155,7 @@ impl Store {
             let db = RocksDb::open_cf(
                 &options,
                 path,
-                [CF_BLOBS_V0, CF_METADATA_V0, CF_GRAPH_V0, CF_ID_V0],
+                [CF_MOUNTS_V0, CF_BLOBS_V0, CF_METADATA_V0, CF_GRAPH_V0, CF_ID_V0],
             )?;
 
             // read last inserted id
@@ -188,6 +193,16 @@ impl Store {
                 _rpc_client,
             }),
         })
+    }
+
+    pub fn put_mount(&self, mount: Drive) -> Result<()> {
+        self.local_store()?.put_mount(mount)
+    }
+    pub fn list_mounts(&self) -> Result<Vec<Drive>> {
+        self.local_store()?.list_mounts()
+    }
+    pub fn get_mount(&self, name: Vec<u8>) -> Result<Option<Drive>> {
+        self.local_store()?.get_mount(name)
     }
 
     #[tracing::instrument(skip(self, links, blob))]
@@ -257,6 +272,9 @@ impl Store {
             blobs: db
                 .cf_handle(CF_BLOBS_V0)
                 .context("missing column family: blobs")?,
+            mounts: db
+                .cf_handle(CF_MOUNTS_V0)
+                .context("missing column family: drives")?,
             next_id: &self.inner.next_id,
         })
     }
@@ -273,10 +291,61 @@ struct LocalStore<'a> {
     metadata: &'a ColumnFamily,
     graph: &'a ColumnFamily,
     blobs: &'a ColumnFamily,
+    mounts: &'a ColumnFamily,
     next_id: &'a AtomicU64,
 }
 
 impl<'a> LocalStore<'a> {
+
+    fn list_mounts(&self) -> Result<Vec<Drive>> {
+        let mounts = self.db.iterator_cf(self.mounts, IteratorMode::Start)
+            .map(|ent| {
+                let mount = rkyv::from_bytes::<MountV0>(&ent.unwrap().1).unwrap();
+                Drive { 
+                    name: mount.name, 
+                    cid: Cid::try_from(mount.cid).unwrap(),
+                    key: mount.key,
+                    private_name: mount.private_name,
+                }
+             })
+            .collect::<Vec<Drive>>();
+
+        Ok(mounts)
+    }
+
+    fn get_mount(&self, name: Vec<u8>) -> Result<Option<Drive>> {
+        let maybe_id_bytes = self.db.get_pinned_cf(self.mounts, name)?;
+        match maybe_id_bytes {
+            Some(bytes) => {
+                let mount = rkyv::from_bytes::<MountV0>(&bytes).map_err(|e| anyhow!("{:?}", e))?;
+                // Ok(Some(mount.to_drive()))
+                Ok(Some(Drive { 
+                    name: mount.name, 
+                    cid: Cid::try_from(mount.cid).unwrap(),
+                    key: mount.key,
+                    private_name: mount.private_name,
+                }))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn put_mount(&self, drive: Drive) -> Result<()> {
+        let cf = self;
+        let name = drive.name.clone();
+
+        let db_drive = MountV0::from(drive);
+        let db_drive_bytes = rkyv::to_bytes::<_, 1024>(&db_drive)?; // TODO: is this the right amount of scratch space?
+
+        let mut batch = WriteBatch::default();
+        batch.put_cf(cf.mounts, &name, db_drive_bytes);
+        self.db.write(batch)?;
+        // observe!(StoreHistograms::PutRequests, start.elapsed().as_secs_f64());
+        // record!(StoreMetrics::PutBytes, blob_size as u64);
+
+        Ok(())
+    }
+
     fn put<T: AsRef<[u8]>, L>(&self, cid: Cid, blob: T, links: L) -> Result<()>
     where
         L: IntoIterator<Item = Cid>,
@@ -781,6 +850,25 @@ mod tests {
         assert!(store.has_blob_for_hash(&hash)?);
         let actual = store.get_blob_by_hash(&hash)?.map(|x| x.to_vec());
         assert_eq!(actual, Some(expected));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_mounts() -> anyhow::Result<()> {
+        let (store, _dir) = test_store().await?;
+        assert_eq!(store.list_mounts()?.len(), 0);
+        let name: Vec<u8> = "my_drive".as_bytes().into();
+        let input = Drive{
+            name: name.clone(),
+            cid: Cid::from_str("bafybeib4tddkl4oalrhe7q66rrz5dcpz4qwv5lmpstuqrls3djikw566y4")?,
+            key: None,
+            private_name: None,
+        };
+        store.put_mount(input.clone())?;
+        assert_eq!(store.get_mount(name)?, Some(input.clone()));
+
+        let mounts = store.list_mounts()?;
+        assert_eq!(*mounts.first().unwrap(), input);
         Ok(())
     }
 }

@@ -1,0 +1,14 @@
+[package]
+name = "iroh-mount"
+version = "0.1.0"
+edition = "2021"
+authors = ["Brendan O'Brien <b5@n0.computer>"]
+license = "Apache-2.0/MIT"
+repository = "https://github.com/n0-computer/iroh"
+description = "drives concept"
+
+[dependencies]
+cid = "0.8.4"
+rkyv = { version = "0.7.37" }
+
+[dev-dependencies]
