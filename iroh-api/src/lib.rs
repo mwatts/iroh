@@ -3,11 +3,13 @@ mod api_ext;
 mod config;
 mod error;
 mod p2p;
+mod fs;
 
 #[cfg(feature = "testing")]
 pub use crate::api::MockApi;
 pub use crate::api::{Api, Iroh, OutType};
 pub use crate::api_ext::ApiExt;
+pub use crate::fs::Fs;
 pub use crate::error::ApiError;
 #[cfg(feature = "testing")]
 pub use crate::p2p::MockP2p;

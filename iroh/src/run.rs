@@ -7,7 +7,7 @@ use console::style;
 use crossterm::style::Stylize;
 use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
-use iroh_api::{AddEvent, Api, ApiExt, IpfsPath, Iroh, ServiceStatus};
+use iroh_api::{AddEvent, Api, ApiExt, Fs, IpfsPath, Iroh, ServiceStatus};
 use iroh_metrics::config::Config as MetricsConfig;
 use iroh_util::{human, iroh_config_path, make_config};
 
@@ -57,6 +57,43 @@ enum Commands {
         /// Don't provide added content to the network
         #[clap(long)]
         offline: bool,
+    },
+    #[clap(about="cat a file")]
+    Cat {
+        file: PathBuf,
+    },
+    #[clap(about="copy a file or directory into wnfs")]
+    Cp {
+        from: PathBuf,
+        to: PathBuf,
+    },
+    #[clap(about="list the contents of a directory")]
+    Ls {
+        dir: PathBuf,
+    },
+    #[clap(about="create a directory")]
+    Mkdir {
+        target: PathBuf,
+    },
+    #[clap(about="move files and/or directories")]
+    Mv {
+        from: PathBuf,
+        to: PathBuf,
+    },
+    #[clap(about="remove files and directories")]
+    Rm {
+        file: PathBuf,
+
+        #[clap(short,long)]
+        recursive: bool,
+    },
+    #[clap(about="show a tree rooted at a given path")]
+    Tree {
+        dir: PathBuf,
+    },
+    #[clap(about="add a file")]
+    Write {
+        dest: PathBuf,
     },
     #[clap(about = "Fetch IPFS content and write it to disk")]
     #[clap(after_help = doc::GET_LONG_DESCRIPTION )]
@@ -167,7 +204,32 @@ impl Cli {
                 offline,
             } => {
                 add(api, path, *no_wrap, *recursive, !*offline).await?;
-            }
+            },
+            Commands::Cat{ file } =>  {
+                todo!("Cat")
+            },
+            Commands::Cp{ from, to } =>  {
+                todo!("Cp")
+            },
+            Commands::Ls{ dir } =>  {
+                let res = api.ls(dir).await?;
+                res.iter().for_each(|d| println!("{:?}", d));
+            },
+            Commands::Mkdir{ target } =>  {
+                todo!("Mkdir")
+            },
+            Commands::Mv{ from, to } =>  {
+                todo!("Mv")
+            },
+            Commands::Rm{ file, recursive } =>  {
+                todo!("Rm")
+            },
+            Commands::Tree{ dir } =>  {
+                todo!("Tree")
+            },
+            Commands::Write{ dest } =>  {
+                todo!("Write")
+            },
             Commands::Get {
                 ipfs_path: path,
                 output,
@@ -326,6 +388,22 @@ async fn add(
     }
 
     println!("/ipfs/{}", root);
+
+    Ok(())
+}
+
+
+async fn cp(
+    api: &impl Api,
+    from: &Path,
+    to: &Path,
+) -> Result<()> {
+    if !from.exists() {
+        anyhow::bail!("From path does not exist");
+    }
+    if !from.is_dir() && !from.is_file() {
+        anyhow::bail!("From path is not a file or directory");
+    }
 
     Ok(())
 }

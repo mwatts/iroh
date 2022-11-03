@@ -13,6 +13,7 @@ testing = ["dep:mockall"]
 cid = "0.8.5"
 config = "0.13.1"
 iroh-metrics = { path = "../iroh-metrics", default-features = false, features = ["rpc-grpc"] }
+iroh-mount = { path = "../iroh-mount" }
 iroh-resolver = { path = "../iroh-resolver" }
 iroh-rpc-types = { path = "../iroh-rpc-types" }
 iroh-rpc-client = { path = "../iroh-rpc-client" }

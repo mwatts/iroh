@@ -12,6 +12,9 @@ service Store {
   rpc Has(HasRequest) returns (HasResponse) {}
   rpc GetLinks(GetLinksRequest) returns(GetLinksResponse) {}
   rpc GetSize(GetSizeRequest) returns (GetSizeResponse) {}
+  rpc ListMounts(ListMountsRequest) returns(ListMountsResponse) {}
+  rpc GetMount(GetMountRequest) returns(GetMountResponse) {}
+  rpc PutMount(Mount) returns(google.protobuf.Empty) {}
 }
 
 message VersionResponse {
@@ -71,3 +74,25 @@ message GetSizeResponse {
   optional uint64 size = 1;
 }
 
+message Mount {
+  bytes name = 1;
+  bytes cid = 2;
+  optional bytes key = 3;
+  optional bytes private_name = 4;
+}
+
+message ListMountsRequest {
+  optional int64 limit = 1;
+}
+
+message ListMountsResponse {
+  repeated Mount mounts = 1;
+}
+
+message GetMountRequest {
+  bytes name = 1;
+}
+
+message GetMountResponse {
+  optional Mount mount = 1;
+}

@@ -12,6 +12,7 @@ use futures::future::{BoxFuture, LocalBoxFuture};
 use futures::stream::LocalBoxStream;
 use futures::FutureExt;
 use futures::StreamExt;
+use iroh_mount::Drive;
 use iroh_resolver::unixfs_builder;
 use iroh_rpc_client::Client;
 use iroh_rpc_client::StatusTable;
@@ -69,6 +70,10 @@ pub trait Api {
 
     fn check(&self) -> BoxFuture<'_, StatusTable>;
     fn watch(&self) -> LocalBoxFuture<'static, LocalBoxStream<'static, StatusTable>>;
+
+    fn list_mounts(&self) -> LocalBoxFuture<'_, Result<Vec<Drive>>>;
+    // fn get_mount(&self, ) -> BoxFuture<'_, Result<>>;
+    // fn put_mount(&self, ) -> 
 }
 
 impl Iroh {
@@ -210,5 +215,9 @@ impl Api for Iroh {
     ) -> LocalBoxFuture<'static, LocalBoxStream<'static, iroh_rpc_client::StatusTable>> {
         let client = self.client.clone();
         async { client.watch().await.boxed_local() }.boxed_local()
+    }
+
+    fn list_mounts(&self) -> LocalBoxFuture<'_, Result<Vec<Drive>>> {
+        async { self.client.try_store()?.list_mounts().await }.boxed_local()
     }
 }

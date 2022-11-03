@@ -5,11 +5,13 @@ use bytes::Bytes;
 use cid::Cid;
 #[cfg(feature = "grpc")]
 use futures::Stream;
+use iroh_mount::Drive;
 #[cfg(feature = "grpc")]
 use iroh_rpc_types::store::store_client::StoreClient as GrpcStoreClient;
 use iroh_rpc_types::store::{
     GetLinksRequest, GetRequest, GetSizeRequest, HasRequest, PutManyRequest, PutRequest, Store,
-    StoreClientAddr, StoreClientBackend,
+    StoreClientAddr, StoreClientBackend, 
+    ListMountsRequest, GetMountRequest, Mount
 };
 use iroh_rpc_types::Addr;
 #[cfg(feature = "grpc")]
@@ -97,4 +99,53 @@ impl StoreClient {
         let size = self.backend.get_size(req).await?.size;
         Ok(size)
     }
+
+    #[tracing::instrument(skip(self))]
+    pub async fn list_mounts(&self) -> Result<Vec<Drive>> {
+        let req = ListMountsRequest {
+            limit: None
+        };
+        let mounts = self.backend.list_mounts(req).await?.mounts;
+        let mounts: Vec<Drive> = mounts
+            .iter()
+            .map(|m| {
+                Drive{
+                    name: m.name.clone(),
+                    cid: Cid::try_from(m.cid.clone()).unwrap(),
+                    key: None, // TODO(b5)
+                    private_name: None, // TODO(b5)
+                }
+            })
+            .collect();
+        Ok(mounts)
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub async fn get_mount(&self, name: Vec<u8>) -> Result<Option<Drive>> {
+        let req = GetMountRequest { name };
+        let mount = self.backend.get_mount(req).await?.mount;
+        match mount {
+            None => Ok(None),
+            Some(mount) => {
+                Ok(Some(Drive{
+                    name: mount.name,
+                    cid: Cid::try_from(mount.cid).unwrap(),
+                    key: None, // TODO(b5)
+                    private_name: None, // TODO(b5)
+                }))
+            }
+        }
+    }
+
+    pub async fn put_mount(&self, mount: Drive) -> Result<()> {
+        let req = Mount {
+            name: mount.name,
+            cid: mount.cid.to_bytes(),
+            key: mount.key,
+            private_name: mount.private_name,
+        };
+        self.backend.put_mount(req).await?;
+        Ok(())
+    }
+
 }
