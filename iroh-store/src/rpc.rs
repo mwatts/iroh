@@ -30,7 +30,7 @@ impl RpcStore for Store {
     async fn put(&self, req: PutRequest) -> Result<()> {
         let cid = cid_from_bytes(req.cid)?;
         let links = links_from_bytes(req.links)?;
-        let res = self.put(cid, req.blob, links)?;
+        let res = self.put(cid, &req.blob, links)?;
 
         info!("store rpc call: put cid {}", cid);
         Ok(res)
