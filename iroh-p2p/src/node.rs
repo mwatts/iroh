@@ -1127,7 +1127,7 @@ mod tests {
             if let Some(addr) = self.addr {
                 network_config.libp2p.listening_multiaddr = addr;
             } else {
-                network_config.libp2p.listening_multiaddr = "/ip4/0.0.0.0/tcp/0".parse().unwrap();
+                network_config.libp2p.listening_multiaddr = "/ip4/127.0.0.1/tcp/0".parse().unwrap();
             }
 
             if !self.bootstrap {
@@ -1173,13 +1173,12 @@ mod tests {
 
             let network_events = p2p.network_events();
             let task = tokio::task::spawn(async move { p2p.run().await.unwrap() });
+            tokio::task::yield_now().await;
 
             let client = client.try_p2p()?;
 
-            let addr =
-                tokio::time::timeout(Duration::from_millis(500), get_addr_loop(client.clone()))
-                    .await
-                    .context("timed out before getting a listening address for the node")??;
+            let addrs = client.listeners().await?;
+            let addr = addrs.get(0).unwrap().clone();
             let mut dial_addr = addr.clone();
             dial_addr.push(Protocol::P2p(peer_id.into()));
             Ok(TestRunner {
@@ -1190,15 +1189,6 @@ mod tests {
                 addr,
                 dial_addr,
             })
-        }
-    }
-
-    async fn get_addr_loop(client: P2pClient) -> Result<Multiaddr> {
-        loop {
-            let l = client.listeners().await?;
-            if let Some(a) = l.get(0) {
-                return Ok(a.clone());
-            }
         }
     }
 
