@@ -8,6 +8,7 @@ members = [
   "iroh-gateway",
   "iroh-localops",
   "iroh-metrics",
+  "iroh-memesync",
   "iroh-one",
   "iroh-p2p",
   "iroh-resolver",

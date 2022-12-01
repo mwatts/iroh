@@ -85,15 +85,24 @@ impl ContentLoader for Loader {
         ensure!(!providers.is_empty(), "no providers supplied");
 
         // TODO: track context id
+        let query = iroh_memesync::Query {
+            path: iroh_memesync::Path::from(cid),
+            recursion: iroh_memesync::Recursion::None,
+        };
+        /*Some {
+                depth: 32,
+                direction: iroh_memesync::RecursionDirection::BreadthFirst,
+            },
+        };*/
         let res = self
             .client
             .try_p2p()?
-            .fetch_bitswap(0, cid, providers.clone())
+            .fetch_memesync(0, query, providers.clone())
             .await;
         let bytes = match res {
             Ok(bytes) => bytes,
             Err(err) => {
-                error!("Bitswap error: {:#?}", err);
+                error!("memesync error: {:#?}", err);
                 return Err(err);
             }
         };
@@ -152,6 +161,9 @@ impl P2pNode {
             libp2p: config::Libp2pConfig {
                 listening_multiaddrs: vec![format!("/ip4/0.0.0.0/tcp/{port}").parse().unwrap()],
                 mdns: false,
+                bitswap_client: false,
+                bitswap_server: false,
+                memesync: true,
                 kademlia: true,
                 autonat: true,
                 relay_client: true,
