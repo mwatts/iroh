@@ -19,6 +19,8 @@ use crate::p2p::{run_command as run_p2p_command, P2p};
 use crate::services::require_services;
 use crate::size::size_stream;
 
+use iroh_wnfs::volume::default_volume;
+
 #[derive(Parser, Debug, Clone)]
 #[clap(version, long_about = None, propagate_version = true)]
 #[clap(about = "A next generation IPFS implementation: https://iroh.computer")]
@@ -61,6 +63,30 @@ enum Commands {
         ipfs_path: IpfsPath,
         /// filesystem path to write to. Optional and defaults to $CID
         output: Option<PathBuf>,
+    },
+    #[clap(about = "create a directory")]
+    Mkdir {
+        /// Path to the directory to create
+        path: PathBuf,
+    },
+    #[clap(about = "copy into iroh")]
+    Cp {
+        /// Path to copy from
+        src: PathBuf,
+        /// location within iroh to copy to
+        dst: PathBuf,
+    },
+    #[clap(about = "read data from iroh")]
+    Cat {
+        path: PathBuf,
+    },
+    #[clap(about = "list volume directories")]
+    Ls {
+        path: PathBuf,
+    },
+    #[clap(about = "pretty-print directory hierarchy")]
+    Tree {
+        path: PathBuf,
     },
     #[clap(about = "Start local iroh services")]
     #[clap(after_help = doc::START_LONG_DESCRIPTION )]
@@ -144,6 +170,30 @@ impl Cli {
                 let root_path =
                     iroh_api::fs::write_get_stream(path, blocks, output.as_deref()).await?;
                 println!("Saving file(s) to {}", root_path.to_str().unwrap());
+            }
+            Commands::Mkdir { path } => {
+                let v = &mut default_volume()?;
+                iroh_wnfs::mkdir(api, v, path.to_path_buf()).await?;
+            }
+            Commands::Cat { path } => {
+                let v = default_volume()?;
+                let res = iroh_wnfs::cat(api, &v, path.to_path_buf()).await?;
+                print!("{:?}", res);
+            }
+            Commands::Cp { src, dst } => {
+                let v = &mut default_volume()?;
+                iroh_wnfs::cp(api, v, src.to_path_buf(), dst.to_path_buf()).await?;
+            }
+            Commands::Ls { path } => {
+                let v = &default_volume()?;
+                let results = iroh_wnfs::ls(api, v, path.to_path_buf()).await?;
+                for (dir, meta) in results {
+                    println!("{} {:?}", dir, meta);
+                }
+            }
+            Commands::Tree { path } => {
+                let v = &default_volume()?;
+                iroh_wnfs::tree(api, v, path.to_path_buf()).await?;
             }
             Commands::P2p(p2p) => run_p2p_command(&api.p2p()?, p2p).await?,
             Commands::Start { service, all } => {

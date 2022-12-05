@@ -16,6 +16,7 @@ members = [
   "iroh-share",
   "iroh-store",
   "iroh-util",
+  "iroh-wnfs",
   "stores/*",
   "xtask",
 ]
@@ -23,6 +24,11 @@ members = [
 # resolver to 2
 # https://github.com/gfx-rs/wgpu/issues/2356#issuecomment-1005134986
 resolver = "2"
+
+[patch.crates-io]
+# wnfs = { git = "https://github.com/n0-computer/rs-wnfs", branch = "iroh-0-50" }
+wnfs = { path = "../rs-wnfs/wnfs" }
+skip_ratchet = { path = "../rs-skip-ratchet" }
 
 [profile.optimized-release]
 inherits = 'release'

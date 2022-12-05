@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::{Config, CONFIG_FILE_NAME, ENV_PREFIX};
 use crate::P2pApi;
+use crate::StoreApi;
 use crate::{AddEvent, IpfsPath};
 use anyhow::{ensure, Context, Result};
 use cid::Cid;
@@ -83,6 +84,11 @@ impl Api {
     pub fn p2p(&self) -> Result<P2pApi> {
         let p2p_client = self.client.try_p2p()?;
         Ok(P2pApi::new(p2p_client))
+    }
+
+    pub fn store(&self) -> Result<StoreApi> {
+        let store_client = self.client.try_store()?;
+        Ok(StoreApi::new(store_client))
     }
 
     /// High level get, equivalent of CLI `iroh get`.
