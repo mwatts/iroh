@@ -888,6 +888,7 @@ mod tests {
         assert!(store.has_blob_for_hash(&hash)?);
         let actual = store.get_blob_by_hash(&hash)?.map(|x| x.to_vec());
         assert_eq!(actual, Some(expected));
+
         Ok(())
     }
 
