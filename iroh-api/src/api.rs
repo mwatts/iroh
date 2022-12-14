@@ -92,6 +92,31 @@ impl Api {
         Ok(Self { client, resolver })
     }
 
+    pub async fn new_from_config(config: Config) -> Result<Self> {
+        let client = Client::new(config.rpc_client).await?;
+        let content_loader = FullLoader::new(
+            client.clone(),
+            FullLoaderConfig {
+                http_gateways: config
+                    .http_resolvers
+                    .iter()
+                    .flatten()
+                    .map(|u| u.parse())
+                    .collect::<Result<_>>()
+                    .context("invalid gateway url")?,
+                indexer: config
+                    .indexer_endpoint
+                    .as_ref()
+                    .map(|u| u.parse())
+                    .transpose()
+                    .context("invalid indexer endpoint")?,
+            },
+        )?;
+        let resolver = Resolver::new(content_loader);
+
+        Ok(Self { client, resolver })
+    }
+
     pub async fn provide(&self, cid: Cid) -> Result<()> {
         self.client.try_p2p()?.start_providing(&cid).await
     }
