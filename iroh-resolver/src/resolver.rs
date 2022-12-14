@@ -13,12 +13,11 @@ use cid::Cid;
 use futures::{Future, Stream, TryStreamExt};
 use iroh_metrics::inc;
 use iroh_unixfs::{
-    codecs::Codec,
     content_loader::{ContentLoader, ContextId, LoaderContext},
-    parse_links,
     unixfs::{poll_read_buf_at_pos, DataType, UnixfsChildStream, UnixfsContentReader, UnixfsNode},
     Block, Link, LoadedCid, ResponseClip, Source,
 };
+use iroh_util::{codecs::Codec, parse_links};
 use libipld::codec::Encode;
 use libipld::prelude::Codec as _;
 use libipld::{Ipld, IpldCodec};

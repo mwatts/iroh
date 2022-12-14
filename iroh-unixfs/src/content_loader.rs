@@ -13,6 +13,7 @@ use bytes::Bytes;
 use cid::{multibase::Base, Cid};
 use futures::future::Either;
 use iroh_rpc_client::Client;
+use iroh_util::parse_links;
 use rand::seq::SliceRandom;
 use reqwest::Url;
 use tracing::{debug, info, trace, warn};
