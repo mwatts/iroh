@@ -16,8 +16,8 @@ use futures::TryStreamExt;
 use handlebars::Handlebars;
 use http::Method;
 use iroh_metrics::{core::MRecorder, gateway::GatewayMetrics, inc, resolver::OutMetrics};
-use iroh_resolver::resolver::{CidOrDomain, UnixfsType};
-use iroh_unixfs::{content_loader::ContentLoader, Link};
+use iroh_resolver::resolver::UnixfsType;
+use iroh_unixfs::{content_loader::ContentLoader, path::CidOrDomain, Link};
 use iroh_util::human::format_bytes;
 use serde_json::{
     json,
@@ -180,7 +180,11 @@ async fn request_preprocessing<T: ContentLoader + Unpin>(
         }
     }
 
-    // TODO: handle 404 or error
+    let full_content_path = format!("/{}/{}{}", path_params.scheme, path_params.cid, cpath);
+    let resolved_path: iroh_unixfs::path::Path = full_content_path
+        .parse()
+        .map_err(|e: anyhow::Error| e.to_string())
+        .map_err(|e| GatewayError::new(StatusCode::BAD_REQUEST, &e))?;
     let resolved_cid = path.root();
 
     if handle_only_if_cached(request_headers, state, path.root()).await? {

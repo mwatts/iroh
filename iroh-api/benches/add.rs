@@ -60,6 +60,7 @@ fn add_benchmark(c: &mut Criterion) {
                         FullLoaderConfig {
                             http_gateways: Vec::new(),
                             indexer: None,
+                            providers: Default::default(),
                         },
                     )
                     .unwrap();
