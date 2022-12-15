@@ -823,7 +823,7 @@ fn add_blocks_to_store_chunked<S: Store>(
     stream! {
         while let Some(block) = blocks.next().await {
             let block = block?;
-            let block_size = block.data().len() as u64;
+            let block_size = block.data().len() as u64 + block.links().len() as u64 * 128;
             let cid = *block.cid();
             let raw_data_size = block.raw_data_size();
             tracing::info!("adding chunk of {} bytes", chunk_size);
