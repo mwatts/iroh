@@ -12,6 +12,7 @@ rust-version = "1.65"
 anyhow = { version = "1", features = ["backtrace"] }
 ahash = "0.8.0"
 async-trait = "0.1.56"
+async-stream = "0.3.3"
 bytecheck = "0.6.7"
 bytes = "1.1.0"
 cid = "0.9"
