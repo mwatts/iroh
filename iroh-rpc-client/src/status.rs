@@ -1,5 +1,35 @@
 use crate::{gateway, network, store};
 use anyhow::Result;
+use async_stream::stream;
+use futures::stream::{Stream, StreamExt};
+use iroh_rpc_types::WatchRequest;
+use quic_rpc::{
+    message::{Msg, ServerStreaming},
+    ChannelTypes, RpcClient, Service,
+};
+
+pub fn watch<S, C, M>(client: RpcClient<S, C>, name: &str) -> impl Stream<Item = ServiceStatus>
+where
+    S: Service,
+    C: ChannelTypes,
+    WatchRequest: Msg<S, Pattern: ServerStreaming>,
+{
+    stream! {
+        loop {
+            let res = client.server_streaming(WatchRequest).await;
+            match res {
+                Ok(res) => {
+                    while let Some(Ok(v)) = res.next().await {
+                        yield ServiceStatus::new(name, StatusType::Serving, v.version);
+                    }
+                    yield ServiceStatus::new(name, StatusType::Down, "");
+                },
+                Err(_) => yield ServiceStatus::new(name, StatusType::Down, "")
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StatusType {
