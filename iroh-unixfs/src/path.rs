@@ -1,7 +1,11 @@
-use std::fmt;
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use anyhow::{anyhow, Context};
 use cid::Cid;
+use iroh_util::codecs::Codec;
 
 // ToDo: Remove this function
 // Related issue: https://github.com/n0-computer/iroh/issues/593
@@ -199,5 +203,16 @@ impl FromStr for Path {
         }
 
         Ok(Path { typ, root, tail })
+    }
+}
+
+impl From<Path> for iroh_memesync::Path {
+    fn from(p: Path) -> Self {
+        let root = match p.root {
+            CidOrDomain::Cid(root) => root,
+            _ => todo!(),
+        };
+
+        iroh_memesync::Path { root, tail: p.tail }
     }
 }
