@@ -62,6 +62,7 @@ pub struct Libp2pConfig {
     pub notify_handler_buffer_size: usize,
     pub connection_event_buffer_size: usize,
     pub dial_concurrency_factor: u8,
+    pub psk: Option<[u8; 32]>,
 }
 
 /// Configuration for the [`iroh-p2p`] node.
@@ -187,6 +188,7 @@ impl Default for Libp2pConfig {
             notify_handler_buffer_size: 256,
             connection_event_buffer_size: 256,
             dial_concurrency_factor: 8,
+            psk: None,
         }
     }
 }

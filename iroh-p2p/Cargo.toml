@@ -65,6 +65,7 @@ features = [
   "rsa",
   "tokio",
   "macros",
+  "pnet",
 ] 
 
 [dev-dependencies]

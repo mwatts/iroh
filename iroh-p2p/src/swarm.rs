@@ -5,12 +5,13 @@ use iroh_rpc_client::Client;
 use libp2p::{
     core::{
         self,
+        either::EitherTransport,
         muxing::StreamMuxerBox,
         transport::{Boxed, OrTransport},
     },
     dns,
     identity::Keypair,
-    mplex, noise, quic,
+    mplex, noise, quic, pnet,
     swarm::{derive_prelude::EitherOutput, ConnectionLimits, Executor, SwarmBuilder},
     tcp, websocket,
     yamux::{self, WindowUpdateMode},
@@ -31,13 +32,29 @@ async fn build_transport(
 
     let port_reuse = true;
     let connection_timeout = Duration::from_secs(30);
+    let psk = config.psk.map(pnet::PreSharedKey::new);
 
     // TCP
     let tcp_config = tcp::Config::default().port_reuse(port_reuse);
     let tcp_transport = tcp::tokio::Transport::new(tcp_config.clone());
+    let tcp_transport = if let Some(psk) = psk {
+        EitherTransport::Left(
+            tcp_transport
+                .and_then(move |socket, _| pnet::PnetConfig::new(psk).handshake(socket)),
+        )
+    } else {
+        EitherTransport::Right(tcp_transport)
+    };
 
     // Websockets
     let ws_tcp = websocket::WsConfig::new(tcp::tokio::Transport::new(tcp_config));
+    let ws_tcp = if let Some(psk) = psk {
+        EitherTransport::Left(
+            ws_tcp.and_then(move |socket, _| pnet::PnetConfig::new(psk).handshake(socket)),
+        )
+    } else {
+        EitherTransport::Right(ws_tcp)
+    };
     let tcp_ws_transport = tcp_transport.or_transport(ws_tcp);
 
     // Quic
@@ -95,7 +112,7 @@ async fn build_transport(
     let transport = OrTransport::new(quic_transport, tcp_ws_transport)
         .map(|o, _| match o {
             EitherOutput::First((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-            EitherOutput::Second((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+            EitherOutput::Second((peer_id, muxer)) => (peer_id, muxer),
         })
         .boxed();
 
